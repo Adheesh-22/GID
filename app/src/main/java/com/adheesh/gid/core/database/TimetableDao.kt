@@ -12,6 +12,9 @@ interface TimetableDao {
     @Query("SELECT * FROM timetable_entries WHERE dayOfWeek = :dayOfWeek AND enabled = 1 ORDER BY startMinutes ASC")
     fun observeForDay(dayOfWeek: Int): Flow<List<TimetableEntryEntity>>
 
+    @Query("SELECT * FROM timetable_entries WHERE enabled = 1 ORDER BY dayOfWeek ASC, startMinutes ASC")
+    suspend fun getAllEnabled(): List<TimetableEntryEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entry: TimetableEntryEntity)
 

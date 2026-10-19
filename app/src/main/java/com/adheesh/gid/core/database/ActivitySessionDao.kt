@@ -6,25 +6,21 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ActivitySessionDao {
 
-    // Observe all sessions that ended on a given epoch day.
-    // SPEC §3: "Sleep counts on the day the session ENDS."
-    // endAt / 86400000 gives the epoch-day (UTC); we use integer division.
+    // Sessions that ENDED inside [fromMs, toMs) (SPEC §3: sleep counts on the
+    // day the session ends). The caller converts local days to millis, so the
+    // phone's time zone is respected instead of UTC days.
     @Query("""
         SELECT * FROM activity_sessions
-        WHERE (endAt / 86400000) = :epochDay
-           OR (status = 'RUNNING' AND (startAt / 86400000) = :epochDay)
+        WHERE status = 'COMPLETED' AND endAt >= :fromMs AND endAt < :toMs
         ORDER BY startAt ASC
     """)
-    fun observeSessionsForDay(epochDay: Long): Flow<List<ActivitySessionEntity>>
+    fun observeEndedBetween(fromMs: Long, toMs: Long): Flow<List<ActivitySessionEntity>>
 
-    // Sessions in an epoch-day range (for history week view)
-    @Query("""
-        SELECT * FROM activity_sessions
-        WHERE (endAt / 86400000) BETWEEN :fromDay AND :toDay
-           OR (status = 'RUNNING' AND (startAt / 86400000) BETWEEN :fromDay AND :toDay)
-        ORDER BY startAt ASC
-    """)
-    fun observeSessionsForRange(fromDay: Long, toDay: Long): Flow<List<ActivitySessionEntity>>
+    @Query("SELECT * FROM activity_sessions WHERE status = 'RUNNING' ORDER BY startAt ASC")
+    fun observeAllRunning(): Flow<List<ActivitySessionEntity>>
+
+    @Query("SELECT * FROM activity_sessions WHERE status = 'RUNNING' ORDER BY startAt ASC")
+    suspend fun getAllRunning(): List<ActivitySessionEntity>
 
     // Currently running session (should be at most one at a time)
     @Query("SELECT * FROM activity_sessions WHERE status = 'RUNNING' LIMIT 1")

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification accent = Cyan from SPEC §5 (XML needs its own copy of the token). -->
+    <color name="notification_accent">#FF7FE3E6</color>
+    <color name="gid_background">#FF161618</color>
+</resources>

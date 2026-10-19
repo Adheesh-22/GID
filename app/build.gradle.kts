@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -5,6 +7,12 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
 }
+
+// Secrets and signing settings come from local.properties (never committed).
+val localProps = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+fun localProp(key: String): String = localProps.getProperty(key, "").trim()
 
 android {
     namespace   = "com.adheesh.gid"
@@ -19,12 +27,22 @@ android {
 
         // Inject Supabase keys from local.properties into BuildConfig.
         // NEVER put actual values here – they are read at build time only.
-        val props = rootProject.file("local.properties")
-            .takeIf { it.exists() }
-            ?.let { java.util.Properties().apply { load(it.inputStream()) } }
-        buildConfigField("String", "SUPABASE_URL",           "\"${props?.getProperty("SUPABASE_URL", "") ?: ""}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY",      "\"${props?.getProperty("SUPABASE_ANON_KEY", "") ?: ""}\"")
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID",   "\"${props?.getProperty("GOOGLE_OAUTH_WEB_CLIENT_ID", "") ?: ""}\"")
+        buildConfigField("String", "SUPABASE_URL",         "\"${localProp("SUPABASE_URL")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY",    "\"${localProp("SUPABASE_ANON_KEY")}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localProp("GOOGLE_OAUTH_WEB_CLIENT_ID").ifEmpty { localProp("GOOGLE_WEB_CLIENT_ID") }}\"")
+    }
+
+    // Release builds are signed with your own keystore so the APK can be
+    // installed on any phone and updated later with the same signature.
+    signingConfigs {
+        create("release") {
+            if (localProp("RELEASE_STORE_FILE").isNotEmpty()) {
+                storeFile     = file(localProp("RELEASE_STORE_FILE"))
+                storePassword = localProp("RELEASE_STORE_PASSWORD")
+                keyAlias      = localProp("RELEASE_KEY_ALIAS")
+                keyPassword   = localProp("RELEASE_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -32,6 +50,9 @@ android {
             // BuildConfig.DEBUG = true in debug builds, enabling the seed screen
         }
         release {
+            // Without a keystore in local.properties, fall back to the debug key.
+            signingConfig = if (localProp("RELEASE_STORE_FILE").isNotEmpty()) signingConfigs.getByName("release")
+                            else signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -104,6 +125,9 @@ dependencies {
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // WorkManager – daily re-plan of reminders and the 16-hour session check
+    implementation(libs.androidx.work.runtime.ktx)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)

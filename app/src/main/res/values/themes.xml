@@ -5,6 +5,6 @@
          GIDTheme in Compose fully overrides colors; this XML theme only controls
          the pre-Compose window chrome (status bar background, etc.). -->
     <style name="Theme.GID" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowBackground">@color/gid_background</item>
     </style>
 </resources>

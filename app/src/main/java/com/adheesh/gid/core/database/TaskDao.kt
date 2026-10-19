@@ -22,6 +22,23 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE dateEpochDay BETWEEN :from AND :to ORDER BY dateEpochDay ASC")
     fun observeTasksForRange(from: Long, to: Long): Flow<List<TaskEntity>>
 
+    @Query("""
+        SELECT * FROM tasks
+        WHERE dateEpochDay = :epochDay
+        ORDER BY
+            CASE priority WHEN 'HIGH' THEN 3 WHEN 'MEDIUM' THEN 2 ELSE 1 END DESC,
+            COALESCE(timeMinutes, 99999) ASC
+    """)
+    suspend fun getTasksForDay(epochDay: Long): List<TaskEntity>
+
+    // Days in a range that have at least one task (for the dots under dates)
+    @Query("SELECT DISTINCT dateEpochDay FROM tasks WHERE dateEpochDay BETWEEN :from AND :to")
+    fun observeTaskDays(from: Long, to: Long): Flow<List<Long>>
+
+    // Has this task already been carried to another day? (avoids double copies)
+    @Query("SELECT COUNT(*) FROM tasks WHERE carriedFromId = :id")
+    suspend fun countCarriedFrom(id: String): Int
+
     @Query("SELECT * FROM tasks WHERE id = :id")
     fun observeTask(id: String): Flow<TaskEntity?>
 

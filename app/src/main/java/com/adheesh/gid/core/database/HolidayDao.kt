@@ -15,6 +15,9 @@ interface HolidayDao {
     @Query("SELECT dateEpochDay FROM holidays")
     fun observeHolidayDays(): Flow<List<Long>>
 
+    @Query("SELECT dateEpochDay FROM holidays WHERE dateEpochDay BETWEEN :from AND :to")
+    suspend fun getHolidayDaysBetween(from: Long, to: Long): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(holiday: HolidayEntity)
 

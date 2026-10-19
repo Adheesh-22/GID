@@ -5,7 +5,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.adheesh.gid.R
 
@@ -29,7 +28,7 @@ val GIDTypography = Typography(
         fontFamily     = SpaceGroteskFamily,
         fontWeight     = FontWeight.Bold,
         fontSize       = 28.sp,
-        letterSpacing  = 0.5.sp,
+        letterSpacing  = (-0.5).sp,   // tight letter spacing (SPEC §5)
     ),
     // Section headings inside a screen
     titleLarge = TextStyle(
@@ -45,11 +44,38 @@ val GIDTypography = Typography(
         fontSize      = 16.sp,
         letterSpacing = 0.sp,
     ),
-    // Secondary text
+    // Default body text (Text() without a style uses bodyLarge; this matches it)
     bodyMedium = TextStyle(
         fontFamily    = DmSansFamily,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 14.sp,
+        fontSize      = 16.sp,
+        letterSpacing = 0.sp,
+    ),
+    // Small secondary text (privacy line, helper and error text)
+    bodySmall = TextStyle(
+        fontFamily    = DmSansFamily,
+        fontWeight    = FontWeight.Normal,
+        fontSize      = 12.sp,
+        letterSpacing = 0.sp,
+    ),
+    // Big numbers and the logo mark (title size, SPEC §5)
+    displayMedium = TextStyle(
+        fontFamily     = SpaceGroteskFamily,
+        fontWeight     = FontWeight.Bold,
+        fontSize       = 28.sp,
+        letterSpacing  = (-0.5).sp,
+    ),
+    // Card headings in body size, medium weight
+    titleMedium = TextStyle(
+        fontFamily    = DmSansFamily,
+        fontWeight    = FontWeight.Medium,
+        fontSize      = 16.sp,
+        letterSpacing = 0.sp,
+    ),
+    labelMedium = TextStyle(
+        fontFamily    = DmSansFamily,
+        fontWeight    = FontWeight.Medium,
+        fontSize      = 12.sp,
         letterSpacing = 0.sp,
     ),
     // Captions / badges / timestamps
@@ -66,4 +92,12 @@ val GIDTypography = Typography(
         fontSize      = 16.sp,
         letterSpacing = 0.sp,
     ),
+)
+
+/** The big 0–100 weekly score on History: twice the title size. */
+val GIDBigNumber = TextStyle(
+    fontFamily    = SpaceGroteskFamily,
+    fontWeight    = FontWeight.Bold,
+    fontSize      = 56.sp,
+    letterSpacing = (-1).sp,
 )

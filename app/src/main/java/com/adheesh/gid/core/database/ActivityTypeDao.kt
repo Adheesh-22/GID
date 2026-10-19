@@ -9,6 +9,9 @@ interface ActivityTypeDao {
     @Query("SELECT * FROM activity_types ORDER BY name ASC")
     fun observeAll(): Flow<List<ActivityTypeEntity>>
 
+    @Query("SELECT * FROM activity_types ORDER BY name ASC")
+    suspend fun getAll(): List<ActivityTypeEntity>
+
     @Query("SELECT * FROM activity_types WHERE id = :id")
     suspend fun getById(id: String): ActivityTypeEntity?
 

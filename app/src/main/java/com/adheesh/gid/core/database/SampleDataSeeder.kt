@@ -2,7 +2,7 @@ package com.adheesh.gid.core.database
 
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.LocalTime
+import java.time.ZoneId
 import java.util.UUID
 import kotlin.random.Random
 
@@ -18,16 +18,14 @@ class SampleDataSeeder(private val db: GIDDatabase) {
         val now       = System.currentTimeMillis()
 
         // ── 1. Activity types ─────────────────────────────────────────────────
-        // Create one list with stable UUIDs; insert it; reference the same list
-        // for session typeIds below so the foreign-key references are consistent.
-        val allTypes = DefaultActivityTypes.all()
-        db.activityTypeDao().upsertAll(allTypes)
+        // Reuse the default types seeded on first launch so we never create
+        // duplicates; only insert them if they are missing (e.g. after Clear).
+        val existing = db.activityTypeDao().getAll()
+        val allTypes = existing.ifEmpty { DefaultActivityTypes.all().also { db.activityTypeDao().upsertAll(it) } }
 
         val sleepType  = allTypes.first { it.category == "SLEEP" }
         val napType    = allTypes.first { it.category == "NAP" }
         val focusTypes = allTypes.filter { it.category == "FOCUS" }
-        @Suppress("UNUSED_VARIABLE")
-        val classType  = allTypes.first { it.category == "CLASS" }
 
         // ── 2. Timetable – Mon/Tue/Wed/Thu/Fri ───────────────────────────────
         val subjects = listOf(
@@ -146,10 +144,12 @@ class SampleDataSeeder(private val db: GIDDatabase) {
         db.taskDao().deleteAll()
         db.timetableDao().deleteAll()
         db.holidayDao().deleteAll()
-        db.activityTypeDao().deleteAll()
         db.alarmDao().deleteAll()
         db.activitySessionDao().deleteAll()
-        db.profileDao().deleteAll()
+        // Custom activity types are removed; the defaults are put back because
+        // alarms and timers always need them (SPEC §2.6).
+        db.activityTypeDao().deleteAll()
+        db.activityTypeDao().upsertAll(DefaultActivityTypes.all())
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -182,6 +182,7 @@ class SampleDataSeeder(private val db: GIDDatabase) {
         updatedAt = now,
     )
 
-    /** Convert a LocalDate to the start-of-day epoch millis (UTC midnight). */
-    private fun epochDayToMs(date: LocalDate): Long = date.toEpochDay() * 86_400_000L
+    /** Local midnight at the start of [date], in the phone's time zone. */
+    private fun epochDayToMs(date: LocalDate): Long =
+        date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }

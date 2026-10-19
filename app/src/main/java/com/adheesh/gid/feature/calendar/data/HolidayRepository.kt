@@ -8,6 +8,7 @@ interface HolidayRepository {
     fun observeAll(): Flow<List<HolidayEntity>>
     fun observeHolidayDays(): Flow<List<Long>>
     suspend fun getHoliday(epochDay: Long): HolidayEntity?
+    suspend fun getHolidayDaysBetween(fromDay: Long, toDay: Long): List<Long>
     suspend fun save(holiday: HolidayEntity)
     suspend fun saveAll(holidays: List<HolidayEntity>)
     suspend fun delete(epochDay: Long)
@@ -18,6 +19,7 @@ class HolidayRepositoryImpl(private val dao: HolidayDao) : HolidayRepository {
     override fun observeAll()                                = dao.observeAll()
     override fun observeHolidayDays()                        = dao.observeHolidayDays()
     override suspend fun getHoliday(epochDay: Long)          = dao.getHoliday(epochDay)
+    override suspend fun getHolidayDaysBetween(fromDay: Long, toDay: Long) = dao.getHolidayDaysBetween(fromDay, toDay)
     override suspend fun save(holiday: HolidayEntity)        = dao.upsert(holiday)
     override suspend fun saveAll(holidays: List<HolidayEntity>) = dao.upsertAll(holidays)
     override suspend fun delete(epochDay: Long)              = dao.deleteByDay(epochDay)

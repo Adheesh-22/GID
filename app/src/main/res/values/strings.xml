@@ -1,3 +1,279 @@
 <resources>
     <string name="app_name">G.I.D.</string>
+
+    <!-- Common actions -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="action_done">Done</string>
+    <string name="action_fix">Fix</string>
+    <string name="action_im_awake">I\'m awake</string>
+    <string name="action_no_thanks">No thanks</string>
+    <string name="action_not_now">Not now</string>
+    <string name="action_ok">OK</string>
+    <string name="action_open">Open</string>
+    <string name="action_save">Save</string>
+    <string name="action_snooze">Snooze</string>
+    <string name="action_snooze_minutes">Snooze %1$d min</string>
+    <string name="action_start">Start</string>
+    <string name="action_stop">Stop</string>
+    <string name="minutes_short">%1$d min</string>
+    <string name="percent_value">%1$d%%</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Content descriptions (screen readers) -->
+    <string name="cd_add_task">Add task</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_debug">Debug tools</string>
+    <string name="cd_delete_class">Delete class</string>
+    <string name="cd_delete_task">Delete task</string>
+    <string name="cd_delete_type">Delete activity type</string>
+    <string name="cd_edit_class">Edit class</string>
+    <string name="cd_edit_task">Edit task</string>
+    <string name="cd_hide_password">Hide password</string>
+    <string name="cd_show_password">Show password</string>
+    <string name="cd_next_month">Next month</string>
+    <string name="cd_previous_month">Previous month</string>
+    <string name="cd_next_week">Next week</string>
+    <string name="cd_previous_week">Previous week</string>
+    <string name="cd_profile_photo">Profile picture</string>
+    <string name="cd_status_ok">Allowed</string>
+    <string name="cd_status_problem">Needs attention</string>
+
+    <!-- Form fields -->
+    <string name="field_age">Age</string>
+    <string name="field_category">Category</string>
+    <string name="field_color">Color</string>
+    <string name="field_confirm_password">Confirm password</string>
+    <string name="field_date">Date</string>
+    <string name="field_description">Description</string>
+    <string name="field_dob_required">Date of birth *</string>
+    <string name="field_duration_minutes">Duration (minutes)</string>
+    <string name="field_email">Email</string>
+    <string name="field_enabled">Enabled</string>
+    <string name="field_end">End</string>
+    <string name="field_estimate">Estimated minutes</string>
+    <string name="field_holiday_name">Name (optional)</string>
+    <string name="field_institution">College / institution</string>
+    <string name="field_label">Label</string>
+    <string name="field_name">Name</string>
+    <string name="field_name_required">Name *</string>
+    <string name="field_new_password">New password</string>
+    <string name="field_password">Password</string>
+    <string name="field_phone">Phone (optional)</string>
+    <string name="field_priority">Priority</string>
+    <string name="field_reminder_minutes">Reminder (minutes before)</string>
+    <string name="field_repeat">Repeat</string>
+    <string name="field_room">Room</string>
+    <string name="field_start">Start</string>
+    <string name="field_subject">Subject</string>
+    <string name="field_task_title">Title</string>
+    <string name="field_time">Time</string>
+    <string name="field_time_optional">Time (optional)</string>
+    <string name="field_type">Type</string>
+
+    <!-- Auth -->
+    <string name="auth_logo_letter">G</string>
+    <string name="auth_title_sign_in">Sign in to GID</string>
+    <string name="auth_title_sign_up">Create your GID account</string>
+    <string name="auth_sign_in">Sign In</string>
+    <string name="auth_sign_up">Sign Up</string>
+    <string name="auth_or_continue">or continue with</string>
+    <string name="auth_google">Google</string>
+    <string name="auth_no_account">Don\'t have an account?</string>
+    <string name="auth_have_account">Already have an account?</string>
+    <string name="auth_sign_up_link">Sign up</string>
+    <string name="auth_sign_in_link">Sign in</string>
+    <string name="auth_forgot">Forgot password</string>
+    <string name="auth_privacy_line">We store your name, date of birth, email, phone and institution in the cloud. Your tasks, timetable, alarms, sleep and history stay on this phone.</string>
+    <string name="auth_reset_sent">Password reset email sent. Open the link on this phone to choose a new password.</string>
+    <string name="auth_confirm_sent">Account created. Check your inbox and open the confirmation link, then sign in.</string>
+    <string name="auth_new_password_title">Choose a new password</string>
+    <string name="auth_error_email">Enter a valid email address</string>
+    <string name="auth_error_email_first">Enter your email first</string>
+    <string name="auth_error_password_short">Password must be at least 6 characters</string>
+    <string name="auth_error_mismatch">Passwords do not match</string>
+    <string name="auth_error_wrong_password">Wrong email or password. Please try again.</string>
+    <string name="auth_error_not_confirmed">Please confirm your email first. Check your inbox for the link.</string>
+    <string name="auth_error_exists">An account with this email already exists. Sign in instead.</string>
+    <string name="auth_error_weak">That password is too weak. Try a longer one.</string>
+    <string name="auth_error_offline">No internet connection. Connect and try again.</string>
+    <string name="auth_error_rate_limited">Too many attempts. Wait a minute and try again.</string>
+    <string name="auth_error_not_configured">Sign-in isn\'t set up in this build yet (Supabase keys missing).</string>
+    <string name="auth_error_google_not_configured">Google sign-in isn\'t available. Add a Google account to this phone, or check the Google Cloud setup.</string>
+    <string name="auth_error_unknown">Something went wrong. Please try again.</string>
+
+    <!-- Home -->
+    <string name="home_hello_name">Hello %1$s</string>
+    <string name="home_hello_there">Hello there</string>
+    <string name="home_alarm">Alarm</string>
+    <string name="home_no_alarms">No alarms</string>
+    <string name="home_timetable">Timetable</string>
+    <string name="home_no_classes">No classes</string>
+    <string name="home_tasks">Tasks</string>
+    <string name="home_no_tasks">Nothing for today. Tap + to add a task.</string>
+
+    <!-- Calendar and tasks -->
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_tasks_on">Tasks on %1$s</string>
+    <string name="calendar_no_tasks">No tasks on this day</string>
+    <string name="calendar_long_press_hint">Long-press a date to mark a holiday</string>
+    <string name="calendar_holiday">Holiday</string>
+    <string name="calendar_holiday_named">Holiday: %1$s</string>
+    <string name="holiday_mark_title">Mark %1$s as a holiday?</string>
+    <string name="holiday_edit_title">Holiday on %1$s</string>
+    <string name="holiday_text">Class reminders are skipped on holidays.</string>
+    <string name="holiday_mark">Mark holiday</string>
+    <string name="holiday_unmark">Unmark</string>
+    <string name="priority_high">High</string>
+    <string name="priority_medium">Medium</string>
+    <string name="priority_low">Low</string>
+    <string name="task_add_title">New task</string>
+    <string name="task_edit_title">Edit task</string>
+    <string name="task_error_title">Give the task a title</string>
+    <string name="task_select_hint">Select a task to see its details</string>
+    <string name="task_no_time">No time set</string>
+    <string name="task_estimate">Estimated %1$d min</string>
+    <string name="task_percent_done">%1$d%% done</string>
+    <string name="task_move_tomorrow">Move to tomorrow</string>
+    <string name="task_delete_title">Delete task?</string>
+    <string name="task_delete_text">\"%1$s\" will be removed from this day and from History.</string>
+
+    <!-- Timetable -->
+    <string name="timetable_title">Timetable</string>
+    <string name="timetable_change">Change timetable</string>
+    <string name="timetable_empty">No classes yet. Tap \'Change timetable\' to add some.</string>
+    <string name="timetable_add_class">Add class</string>
+    <string name="timetable_edit_class">Edit class</string>
+    <string name="timetable_delete_title">Delete this class?</string>
+    <string name="timetable_time_room">%1$s · %2$s</string>
+    <string name="timetable_reminder_before">Reminder %1$d min before</string>
+    <string name="timetable_error_subject">Enter a subject</string>
+    <string name="timetable_error_time">End time must be after the start time</string>
+
+    <!-- Alarms, timers and activity types -->
+    <string name="alarm_title">Alarm</string>
+    <string name="alarm_tab_alarms">Alarms</string>
+    <string name="alarm_tab_timers">Timers</string>
+    <string name="alarm_none">No alarms yet</string>
+    <string name="alarm_add">Add alarm</string>
+    <string name="alarm_edit">Edit alarm</string>
+    <string name="alarm_delete">Delete alarm</string>
+    <string name="alarm_once">Once</string>
+    <string name="alarm_every_day">Every day</string>
+    <string name="alarm_weekdays">Weekdays</string>
+    <string name="alarm_start_sleep_now">Start sleep now</string>
+    <string name="alarm_start_sleep_hint">Counts your sleep from now until you dismiss this alarm.</string>
+    <string name="alarm_ringing_title">Alarm</string>
+    <string name="alarm_warn_exact">Alarms may ring late: exact alarms are not allowed for GID.</string>
+    <string name="alarm_warn_full_screen">The ringing screen can\'t show over the lock screen yet.</string>
+    <string name="timer_new">New timer</string>
+    <string name="types_title">Activity types</string>
+    <string name="types_add">Add type</string>
+    <string name="types_edit">Edit type</string>
+    <string name="types_default_note">Default types can be renamed but not deleted.</string>
+    <string name="category_sleep">Sleep</string>
+    <string name="category_nap">Nap</string>
+    <string name="category_focus">Focus</string>
+    <string name="category_class">Class</string>
+    <string name="category_free">Free time</string>
+    <string name="category_other">Other</string>
+    <string name="focus_offer_title">Start a session?</string>
+    <string name="focus_offer_text">Pick a focus length. A timer starts right away.</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_week_range">%1$s – %2$s</string>
+    <string name="history_productivity">Productivity</string>
+    <string name="history_focus_week">Focus time this week: %1$s</string>
+    <string name="history_sleep">Sleep (hours)</string>
+    <string name="history_weekly_score">Weekly score</string>
+    <string name="history_no_data">No data</string>
+    <string name="history_no_data_short">no data</string>
+    <string name="history_no_data_last_week">No data last week</string>
+    <string name="history_change">%1$s pts%2$s vs last week</string>
+    <string name="history_tasks_completed">Tasks completed</string>
+    <string name="history_tasks_ratio">%1$d / %2$d</string>
+    <string name="history_avg_percent">Average percent done</string>
+    <string name="history_focus_hours">Focus hours</string>
+    <string name="history_day_score">Day score: %1$s</string>
+    <string name="history_tasks">Tasks</string>
+    <string name="history_no_tasks">No tasks this day</string>
+    <string name="history_focus_by_type">Focus time by activity</string>
+    <string name="history_no_focus">No focus sessions</string>
+    <string name="history_unknown_type">Deleted type</string>
+    <string name="history_nap_time">Nap time</string>
+    <string name="history_long_sleep">Long sleep</string>
+    <string name="history_total_sleep">Total sleep</string>
+    <string name="history_sessions">Sessions</string>
+    <string name="history_no_sleep">No sleep recorded</string>
+    <string name="history_auto_closed">Closed automatically after 16 hours</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_setup_hint">Add your name and date of birth to finish setting up.</string>
+    <string name="settings_edit_photo">Edit</string>
+    <string name="settings_saving">Saving…</string>
+    <string name="settings_saved">Saved</string>
+    <string name="settings_saved_offline">Saved. Will sync when online.</string>
+    <string name="settings_photo_failed">Couldn\'t use that photo. Try another one.</string>
+    <string name="settings_error_name">Enter your name</string>
+    <string name="settings_error_dob">Pick your date of birth</string>
+    <string name="settings_error_dob_future">Date of birth can\'t be in the future</string>
+    <string name="settings_go_home">Go to home</string>
+    <string name="settings_contact">Contact us</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_sign_out_title">Sign out?</string>
+    <string name="settings_sign_out_text">Your tasks, alarms and history stay on this phone. You\'ll need internet to sign in again.</string>
+    <string name="settings_evening_title">Evening check-in</string>
+    <string name="settings_evening_text">Reminder to update today\'s progress</string>
+    <!-- Placeholder: replace with your real support address before sharing the app. -->
+    <string name="contact_email" translatable="false">YOUR_EMAIL</string>
+    <string name="contact_subject">GID feedback</string>
+
+    <!-- Reliability -->
+    <string name="reliability_title">Reliability</string>
+    <string name="reliability_notifications">Notifications</string>
+    <string name="reliability_exact">Exact alarms</string>
+    <string name="reliability_full_screen">Ringing screen over lock screen</string>
+    <string name="reliability_battery">Not restricted by battery saver</string>
+    <string name="reliability_ok">Allowed</string>
+    <string name="reliability_needs_attention">Not allowed, so alarms and reminders may be late or silent</string>
+    <string name="reliability_oem_note">Some phones (Xiaomi, Oppo, Vivo, Realme, Samsung) also need \'Don\'t restrict battery\' or \'Autostart\' turned on for GID in the app info page.</string>
+    <string name="reliability_open_app_info">Open app info</string>
+
+    <!-- Evening progress -->
+    <string name="progress_title">Update today\'s progress</string>
+    <string name="progress_empty">No tasks today.</string>
+    <string name="progress_move_unfinished">Move unfinished to tomorrow</string>
+    <plurals name="progress_moved">
+        <item quantity="one">%1$d task copied to tomorrow</item>
+        <item quantity="other">%1$d tasks copied to tomorrow</item>
+    </plurals>
+
+    <!-- Notifications -->
+    <string name="channel_alarms">Alarms</string>
+    <string name="channel_timers">Timers</string>
+    <string name="channel_classes">Class reminders</string>
+    <string name="channel_sessions">Running sessions</string>
+    <string name="channel_evening">Evening check-in</string>
+    <string name="notif_class_text">Starts at %1$s</string>
+    <string name="notif_class_text_room">Starts at %1$s in %2$s</string>
+    <string name="notif_timer_running">%1$s timer running</string>
+    <string name="notif_timer_ends">Time left</string>
+    <string name="notif_timer_done">%1$s timer finished</string>
+    <string name="notif_timer_done_text">Your session was saved.</string>
+    <string name="notif_sleeping">%1$s in progress</string>
+    <string name="notif_sleeping_text">Tap \'I\'m awake\' when you get up.</string>
+    <string name="notif_evening_title">How did today go?</string>
+    <string name="notif_evening_text">Update today\'s progress so your scores stay true.</string>
+    <string name="notif_rationale_title">Allow notifications?</string>
+    <string name="notif_rationale_text">GID uses notifications for class reminders, timers, the evening check-in and the alarm ringing screen. Nothing is sent to the internet.</string>
 </resources>

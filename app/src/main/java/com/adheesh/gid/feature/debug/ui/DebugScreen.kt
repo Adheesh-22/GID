@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.debug.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BugReport
@@ -111,12 +112,8 @@ fun DebugScreen(
                 .fillMaxWidth()
                 .height(56.dp),
             shape    = MaterialTheme.shapes.large,
-            colors   = OutlinedButtonDefaults.outlinedButtonColors(
-                contentColor = Coral,
-            ),
-            border   = ButtonDefaults.outlinedButtonBorder.copy(
-                // Use Coral border
-            ),
+            colors   = ButtonDefaults.outlinedButtonColors(contentColor = Coral),
+            border   = BorderStroke(1.dp, Coral),
         ) {
             Text("Clear all data", style = MaterialTheme.typography.labelLarge)
         }

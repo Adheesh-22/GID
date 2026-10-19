@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Dark base theme so the window background matches our Compose dark theme.
+         GIDTheme in Compose fully overrides colors; this XML theme only controls
+         the pre-Compose window chrome (status bar background, etc.). -->
+    <style name="Theme.GID" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

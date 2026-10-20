@@ -1,5 +1,8 @@
 package com.adheesh.gid.feature.home.ui
 
+import androidx.compose.ui.text.font.FontWeight // fix : orientation of the home screen
+import androidx.compose.ui.unit.sp // fix : orientation of the home screen
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,8 +74,6 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 // ── Home (SPEC §2.2) ─────────────────────────────────────────────────────────
-// Greeting + profile circle, the 2 × 7 calendar strip, Alarm and Classes
-// cards on the left, the tall Tasks card on the right.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -105,17 +106,35 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         // ── Greeting ─────────────────────────────────────────────────────────
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top // Keeps the avatar at the top right
+        ) {
             Text(
-                text     = name?.let { stringResource(R.string.home_hello_name, it.substringBefore(' ')) } ?: stringResource(R.string.home_hello_there),
+                // Formatted with a comma and a newline to match the reference
+                text     = name?.let { "Hello,\n${it.substringBefore(' ')}" } ?: "Hello,\nThere",
                 style    = MaterialTheme.typography.displayLarge,
+                fontSize = 56.sp, // Made the text larger
+                lineHeight = 60.sp,
+                fontWeight = FontWeight.ExtraBold, // Made the text thicker
                 color    = GIDText,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(top = 24.dp) // Pushes the text a bit lower
             )
-            ProfileAvatar(photoPath = photo, name = name, size = 48.dp, onClick = onOpenSettings)
+            ProfileAvatar(
+                photoPath = photo, 
+                name = name, 
+                size = 56.dp, // Slightly larger avatar to balance the large text
+                onClick = onOpenSettings
+            )
         }
+
+        // Pushes the Calendar and everything below it further down
+        Spacer(modifier = Modifier.height(32.dp))
 
         // ── Two-week calendar strip ──────────────────────────────────────────
         GIDCard(Modifier.fillMaxWidth()) {

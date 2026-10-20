@@ -101,7 +101,7 @@ class AlarmScheduler(
     }
 
     companion object {
-        const val SNOOZE_MINUTES = 10
+        const val SNOOZE_MINUTES = 2
     }
 }
 

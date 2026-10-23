@@ -4,7 +4,6 @@ import com.adheesh.gid.core.database.TaskEntity
 import com.adheesh.gid.core.database.TaskStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -44,17 +43,19 @@ class TaskRulesTest {
         assertEquals(0, TaskRules.withProgress(task(), -5, 0).progressPercent)
     }
 
-    @Test fun `move to tomorrow makes a new task and leaves the original alone`() {
+    //Feature change : Changed from carryToTomorrow to moveToTomorrow 
+    @Test fun `move to tomorrow shifts the date and keeps the same task`() {
         val original = task(percent = 60, day = 200)
-        val copy = TaskRules.carryToTomorrow(original, now = 7_000, newId = "t2")
-        assertEquals("t2", copy.id)
-        assertNotEquals(original.id, copy.id)
-        assertEquals(201L, copy.dateEpochDay)
-        assertEquals("t1", copy.carriedFromId)
-        assertEquals(60, copy.progressPercent)
-        // The original is not modified by the function.
-        assertEquals(200L, original.dateEpochDay)
-        assertEquals(60, original.progressPercent)
+        
+        val moved = TaskRules.moveToTomorrow(original, now = 7_000)
+        
+        // ID remains exactly the same
+        assertEquals(original.id, moved.id) 
+        // Date is incremented by 1
+        assertEquals(201L, moved.dateEpochDay)
+        assertEquals(60, moved.progressPercent)
+        // Ensure updatedAt is refreshed
+        assertEquals(7_000L, moved.updatedAt)
     }
 
     @Test fun `overdue means an earlier day and under 100`() {

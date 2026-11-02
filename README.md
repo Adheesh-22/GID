@@ -13,13 +13,15 @@ The full product spec is in [docs/SPEC.md](docs/SPEC.md) and the coding rules ar
 | Screen | What you can do |
 | --- | --- |
 | **Auth** | Sign in or sign up with email and password, or with Google. Forgot-password emails a reset link. |
-| **Home** | A greeting and your photo, a two-week calendar strip, your next alarm, upcoming classes, and today's tasks (tick them off or add new ones). |
+| **Home** | A greeting and your photo, a two-week calendar strip, your next alarm, upcoming classes, and today's tasks (tick them off or add new ones). Tap the greeting to personalise it. |
+| **Personalise** | Change the name Home greets you with, its font (GID, DM Sans, Serif, Mono, Script, Light) and colour. Pick a background photo: GID blurs it on the phone, lets you dim it, and shows it only behind Home, Calendar, Library and History. |
 | **Calendar** | A month grid with task dots and holidays (long-press a date to mark one). Add, edit, delete, track percent done, change priority and move tasks to tomorrow. |
 | **Library** | The Capture Inbox. Share photos, links, text or PDFs to GID from any app (or tap +). GID suggests the subject from your timetable; you sort each item into a subject, heading and type. Search, subject pages, and a deadline can become a task. All on the phone. |
 | **Exams** | Exams, tests, assignments and projects per subject, with countdowns, reminders (a week before, the evening before, the morning of) and the subject's saved Library items. Shown on Home ("Next up"), the Calendar and subject pages. |
 | **Widget & tile** | A home-screen widget (Camera, Photo, Paste, Inbox count, next exam) and a Quick Settings tile that opens a capture menu. |
 | **History** | Week by week: productivity bars, sleep bars and a weekly score with the change from last week. Tap a bar to see that day's details. |
 | **Settings** | Profile (photo stays on the phone), evening check-in time, sign out, **Backup** export/import (one .zip you keep), and the **Reliability** checklist. |
+| **Motion** | Tabs slide sideways in bottom-bar order. Full-screen pages (Exams, subject and capture pages) and the Alarm and Timetable popups slide up from the bottom and back down on Back. |
 | **Alarm popup** | Alarms with repeat days and an activity type, a "Start sleep now" option, timers, and the activity-types manager. |
 | **Timetable popup** | Your weekly classes, with reminders N minutes before each one (skipped on holidays). |
 
@@ -88,13 +90,15 @@ but sign-in says it isn't set up.
 
 Install on a phone with `adb install -r app/build/outputs/apk/release/app-release.apk`,
 or copy the APK to the phone and open it (allow "Install unknown apps" for your file manager).
+If `BUILD_DIR` is set, take the APK from `<BUILD_DIR>/app/outputs/apk/...` instead; the
+`app/build` folder is not updated.
 
 ## Architecture
 
 One Gradle module, packaged by feature (SPEC §4):
 
 ```
-app/        MainActivity's nav host (Navigation 3), bottom bar, AppContainer (manual DI, no Hilt)
+app/        MainActivity's nav host (Navigation 3), page transitions, bottom bar, AppContainer (manual DI, no Hilt)
 core/
   database/      Room entities + DAOs, DataStore preferences, enums, sample-data seeder
   designsystem/  Color, Type, Shape, Theme tokens and shared composables
@@ -108,7 +112,10 @@ feature/<name>/  ui/ (Compose), viewmodel/ (StateFlow), data/ (repositories), do
 - **Screen → ViewModel → Repository → DAO / Supabase.** Screens never touch Room or Supabase.
 - **Business rules are plain Kotlin with unit tests:** `ScoreCalculator`, `SessionCalculator`,
   `SessionRules` (closing, the midnight rule, 16-hour auto-close), `TaskRules`,
-  `AlarmTimeCalculator`, `ReminderPlanner`, `HistoryCalculator`, `AgeCalculator`.
+  `AlarmTimeCalculator`, `ReminderPlanner`, `HistoryCalculator`, `AgeCalculator`,
+  `ExamReminderPlanner`, `Countdown`, `Appearance` and `BoxBlur`.
+- **Motion** lives in `app/NavTransitions.kt`: each nav entry is tagged as a tab (with its
+  position) or a page, and one rule picks a sideways slide or a slide up/down.
 - **Offline first.** The signed-in account is cached in DataStore, so a saved session opens Home
   without internet. A profile saved offline is marked `needsSync` and pushed on the next launch.
 - **Alarms** use `AlarmManager.setAlarmClock`. A foreground service plays the sound with
@@ -116,6 +123,8 @@ feature/<name>/  ui/ (Compose), viewmodel/ (StateFlow), data/ (repositories), do
   Everything is re-planned after a reboot, a clock or time-zone change, an app update, every
   edit, and once a day.
 - **Privacy.** Only the `profiles` row goes to Supabase. No analytics or crash-reporting SDKs.
+  Library files, the profile photo and the blurred background photo stay in the app's private
+  storage.
 
 ## Reliability tips
 
@@ -125,6 +134,7 @@ Otherwise the phone may stop alarms while the app is closed.
 
 ## Known limitations (V1)
 
-- Data lives only on the phone. Uninstalling the app or losing the phone erases history.
-  A JSON export is the planned first addition.
+- Data lives only on the phone. Export a backup regularly (**Settings → Backup**); without
+  one, uninstalling the app or losing the phone erases everything.
+- The backup does not include the Home look (name, font, colour, background photo).
 - The "Contact us" address is a placeholder (`contact_email` in `res/values/strings.xml`).

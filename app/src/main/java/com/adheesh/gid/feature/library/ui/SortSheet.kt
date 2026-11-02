@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -17,8 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -45,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.adheesh.gid.R
 import com.adheesh.gid.core.database.CaptureEntity
 import com.adheesh.gid.core.database.CaptureType
+import com.adheesh.gid.core.database.ExamKind
 import com.adheesh.gid.core.designsystem.GIDCyan
 import com.adheesh.gid.core.designsystem.GIDDatePickerDialog
 import com.adheesh.gid.core.designsystem.GIDDialog
@@ -57,10 +55,11 @@ import com.adheesh.gid.core.designsystem.OnCard
 import com.adheesh.gid.core.util.formatMedium
 import com.adheesh.gid.core.util.today
 import com.adheesh.gid.feature.capture.data.SortChoice
+import com.adheesh.gid.feature.exams.ui.label
 import com.adheesh.gid.feature.library.viewmodel.SortingViewModel
+import java.time.LocalDate
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 // ── Sort sheet (SPEC §2.8) ───────────────────────────────────────────────────
 // One capture: everything is prefilled from it (or its suggested subject).
@@ -85,7 +84,8 @@ fun SortSheet(
     var title       by rememberSaveable { mutableStateOf(single?.title.orEmpty()) }
     var note        by rememberSaveable { mutableStateOf(single?.note.orEmpty()) }
     var dueEpochDay by rememberSaveable { mutableStateOf(single?.dueEpochDay) }
-    var createTask  by rememberSaveable { mutableStateOf(single?.linkedTaskId == null) }
+    // Deadline extras: NONE, TASK, or an ExamKind name.
+    var alsoCreate  by rememberSaveable { mutableStateOf(if (single?.linkedTaskId == null) ALSO_TASK else ALSO_NONE) }
 
     var newSubjectOpen by rememberSaveable { mutableStateOf(false) }
     var newHeadingOpen by rememberSaveable { mutableStateOf(false) }
@@ -150,15 +150,22 @@ fun SortSheet(
                             color = GIDCyan,
                         )
                     }
-                    Spacer(Modifier.weight(1f))
+                }
+                Label(stringResource(R.string.sort_also_create))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Choice(stringResource(R.string.sort_also_nothing), selected = alsoCreate == ALSO_NONE) { alsoCreate = ALSO_NONE }
                     if (single?.linkedTaskId == null) {
-                        Checkbox(
-                            checked = createTask,
-                            onCheckedChange = { createTask = it },
-                            colors = CheckboxDefaults.colors(checkedColor = GIDCyan, checkmarkColor = OnCard),
-                        )
-                        Text(stringResource(R.string.sort_create_task), color = GIDText, style = MaterialTheme.typography.bodyMedium)
+                        Choice(stringResource(R.string.sort_also_task), selected = alsoCreate == ALSO_TASK) { alsoCreate = ALSO_TASK }
                     }
+                    // An exam belongs to a subject, so these need one picked above.
+                    if (subjectId != null) {
+                        listOf(ExamKind.EXAM, ExamKind.ASSIGNMENT).forEach { k ->
+                            Choice(k.label(), selected = alsoCreate == k.name) { alsoCreate = k.name }
+                        }
+                    }
+                }
+                if (subjectId == null) {
+                    Text(stringResource(R.string.sort_exam_needs_subject), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
                 }
             }
 
@@ -181,7 +188,8 @@ fun SortSheet(
                             title       = if (single != null) title.trim() else null,
                             note        = if (single != null) note.trim() else null,
                             dueEpochDay = if (chosenType == CaptureType.DEADLINE) dueEpochDay else null,
-                            createTask  = createTask,
+                            createTask  = alsoCreate == ALSO_TASK,
+                            createExam  = ExamKind.entries.firstOrNull { it.name == alsoCreate }?.takeIf { subjectId != null },
                         ),
                     ) { onSorted() }
                     onDismiss()
@@ -215,14 +223,17 @@ fun SortSheet(
     }
 }
 
+private const val ALSO_NONE = "NONE"
+private const val ALSO_TASK = "TASK"
+
 @Composable
-private fun Label(text: String) {
+internal fun Label(text: String) {
     Text(text, style = MaterialTheme.typography.labelLarge, color = GIDMutedText)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Choice(text: String, selected: Boolean, selectedColor: Color = GIDCyan, onClick: () -> Unit) {
+internal fun Choice(text: String, selected: Boolean, selectedColor: Color = GIDCyan, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick  = onClick,
@@ -240,7 +251,7 @@ private fun Choice(text: String, selected: Boolean, selectedColor: Color = GIDCy
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddChip(text: String, onClick: () -> Unit) {
+internal fun AddChip(text: String, onClick: () -> Unit) {
     FilterChip(
         selected    = false,
         onClick     = onClick,

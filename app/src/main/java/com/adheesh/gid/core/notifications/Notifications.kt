@@ -15,8 +15,11 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.adheesh.gid.MainActivity
 import com.adheesh.gid.R
+import com.adheesh.gid.core.database.ExamEntity
+import com.adheesh.gid.core.database.ExamKind
 import com.adheesh.gid.core.scheduling.SessionActionReceiver
 import com.adheesh.gid.core.util.formatMinutesOfDay
+import com.adheesh.gid.feature.exams.domain.ExamReminderStep
 
 // ── Notifications ────────────────────────────────────────────────────────────
 // One place that owns channels, ids and the notification builders, so
@@ -29,10 +32,12 @@ object Notifications {
     const val CHANNEL_CLASSES  = "class_reminders"
     const val CHANNEL_SESSIONS = "sessions"
     const val CHANNEL_EVENING  = "evening_prompt"
+    const val CHANNEL_EXAMS    = "exam_reminders"
 
     const val ID_ALARM_RINGING = 1000
     const val ID_EVENING       = 3000
     private const val ID_CLASS_BASE = 2000
+    private const val ID_EXAM_BASE  = 4000
 
     /** Extra on MainActivity intents telling it which dialog to open. */
     const val EXTRA_OPEN       = "com.adheesh.gid.OPEN"
@@ -40,6 +45,9 @@ object Notifications {
     const val OPEN_LIBRARY     = "library"
     /** With OPEN_LIBRARY: captures to open the Sort sheet for (share dialog's 'Sort now'). */
     const val EXTRA_CAPTURE_IDS = "com.adheesh.gid.CAPTURE_IDS"
+    /** Opens ExamDetail for [EXTRA_EXAM_ID]. */
+    const val OPEN_EXAM        = "exam"
+    const val EXTRA_EXAM_ID    = "com.adheesh.gid.EXAM_ID"
 
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -62,6 +70,7 @@ object Notifications {
                 NotificationChannel(CHANNEL_CLASSES, context.getString(R.string.channel_classes), NotificationManager.IMPORTANCE_HIGH),
                 NotificationChannel(CHANNEL_SESSIONS, context.getString(R.string.channel_sessions), NotificationManager.IMPORTANCE_LOW),
                 NotificationChannel(CHANNEL_EVENING, context.getString(R.string.channel_evening), NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(CHANNEL_EXAMS, context.getString(R.string.channel_exams), NotificationManager.IMPORTANCE_HIGH),
             )
         )
     }
@@ -160,6 +169,44 @@ object Notifications {
                     0, context.getString(R.string.action_im_awake),
                     SessionActionReceiver.pendingIntent(context, SessionActionReceiver.ACTION_IM_AWAKE, sessionId),
                 ),
+        )
+    }
+
+    // ── Exam reminders (SPEC §3 Exams) ───────────────────────────────────────
+    fun showExamReminder(context: Context, exam: ExamEntity, subjectName: String?, step: ExamReminderStep, savedItems: Int) {
+        val submitted = ExamKind.of(exam.kind).isSubmitted
+        val title = listOfNotNull(subjectName, exam.title.ifBlank { null }).joinToString(" · ")
+        val details = listOfNotNull(exam.timeMinutes?.let { formatMinutesOfDay(it) }, exam.room).joinToString(" · ")
+        val headline = context.getString(
+            when (step) {
+                ExamReminderStep.WEEK_BEFORE -> R.string.notif_exam_week
+                ExamReminderStep.DAY_BEFORE  -> if (submitted) R.string.notif_due_tomorrow else R.string.notif_exam_tomorrow
+                ExamReminderStep.DAY_OF      -> if (submitted) R.string.notif_due_today else R.string.notif_exam_today
+            }
+        )
+        val text = buildString {
+            append(headline)
+            if (details.isNotEmpty() && step != ExamReminderStep.WEEK_BEFORE) append(" · ").append(details)
+            if (step == ExamReminderStep.WEEK_BEFORE && savedItems > 0) {
+                append("\n").append(context.resources.getQuantityString(R.plurals.notif_exam_saved, savedItems, savedItems))
+            }
+        }
+        val id = ID_EXAM_BASE + (exam.id.hashCode() and 0x0FFF)
+        val open = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_OPEN, OPEN_EXAM)
+            putExtra(EXTRA_EXAM_ID, exam.id)
+        }
+        post(
+            context, id,
+            base(context, CHANNEL_EXAMS)
+                .setContentTitle(title.ifBlank { context.getString(R.string.exams_title) })
+                .setContentText(text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                .setAutoCancel(true),
         )
     }
 

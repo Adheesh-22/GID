@@ -34,6 +34,17 @@ enum class CaptureKind {
     }
 }
 
+enum class ExamKind {
+    EXAM, TEST, ASSIGNMENT, PROJECT;
+
+    /** Assignments and projects are submitted; exams and tests are sat. */
+    val isSubmitted: Boolean get() = this == ASSIGNMENT || this == PROJECT
+
+    companion object {
+        fun of(value: String): ExamKind = entries.firstOrNull { it.name == value } ?: EXAM
+    }
+}
+
 enum class CaptureType {
     EXAM_QUESTION, RESOURCE, NOTE, DEADLINE, IDEA, NOTICE;
 

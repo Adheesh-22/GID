@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.home.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adheesh.gid.core.database.ActivityTypeEntity
@@ -12,6 +13,10 @@ import com.adheesh.gid.core.util.weekStart
 import com.adheesh.gid.feature.alarm.data.ActivityTypeRepository
 import com.adheesh.gid.feature.alarm.data.AlarmRepository
 import com.adheesh.gid.feature.alarm.domain.AlarmTimeCalculator
+import com.adheesh.gid.feature.appearance.data.AppearanceStore
+import com.adheesh.gid.feature.appearance.domain.Appearance
+import com.adheesh.gid.feature.appearance.domain.NameColor
+import com.adheesh.gid.feature.appearance.domain.NameFont
 import com.adheesh.gid.feature.calendar.data.HolidayRepository
 import com.adheesh.gid.feature.settings.data.ProfilePhotoStore
 import com.adheesh.gid.feature.settings.data.ProfileRepository
@@ -20,8 +25,10 @@ import com.adheesh.gid.feature.tasks.data.TaskDraft
 import com.adheesh.gid.feature.tasks.data.TaskRepository
 import com.adheesh.gid.feature.timetable.data.TimetableRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,6 +38,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZonedDateTime
@@ -54,6 +62,7 @@ class HomeViewModel(
     alarms               : AlarmRepository,
     types                : ActivityTypeRepository,
     private val actions  : TaskActions,
+    private val looks    : AppearanceStore,
 ) : ViewModel() {
 
     /** Emits once a minute so "next alarm" and "upcoming classes" move on, and at midnight. */
@@ -71,6 +80,15 @@ class HomeViewModel(
 
     val photoPath: StateFlow<String?> = photos.path
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Greeting font, colour and name, and the background photo (SPEC §2.2). */
+    val appearance: StateFlow<Appearance> = looks.appearance
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Appearance())
+
+    private val _photoBusy   = MutableStateFlow(false)
+    private val _photoFailed = MutableStateFlow(false)
+    val photoBusy: StateFlow<Boolean> = _photoBusy
+    val photoFailed: StateFlow<Boolean> = _photoFailed
 
     /** This week + next week, Monday first (the 2 × 7 strip). */
     val stripDays: StateFlow<List<LocalDate>> = todayFlow.map { d -> (0L..13L).map { d.weekStart().plusDays(it) } }
@@ -106,6 +124,21 @@ class HomeViewModel(
     fun updateTask(task: TaskEntity, draft: TaskDraft) = viewModelScope.launch { actions.update(task, draft) }
     fun delete(id: String) = viewModelScope.launch { actions.delete(id) }
     fun moveToTomorrow(id: String) = viewModelScope.launch { actions.moveToTomorrow(id) }
+
+    fun setHomeName(name: String?) = viewModelScope.launch { looks.setHomeName(name) }
+    fun setFont(font: NameFont) = viewModelScope.launch { looks.setFont(font) }
+    fun setColor(color: NameColor) = viewModelScope.launch { looks.setColor(color) }
+    fun setDim(dim: Float) = viewModelScope.launch { looks.setDim(dim) }
+    fun removeBackground() = viewModelScope.launch { looks.clearBackground() }
+
+    fun setBackground(uri: Uri) = viewModelScope.launch {
+        _photoBusy.value = true
+        _photoFailed.value = false
+        // Finishes even if Home is left while the photo is being blurred.
+        val ok = withContext(NonCancellable) { looks.setBackground(uri) }
+        _photoFailed.value = !ok
+        _photoBusy.value = false
+    }
 
     companion object {
         /**

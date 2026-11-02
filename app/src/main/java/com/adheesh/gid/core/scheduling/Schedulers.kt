@@ -13,6 +13,9 @@ import com.adheesh.gid.core.util.today
 import com.adheesh.gid.feature.alarm.data.AlarmRepository
 import com.adheesh.gid.feature.alarm.domain.AlarmTimeCalculator
 import com.adheesh.gid.feature.calendar.data.HolidayRepository
+import com.adheesh.gid.feature.exams.data.ExamRepository
+import com.adheesh.gid.feature.exams.domain.ExamReminderPlanner
+import com.adheesh.gid.feature.exams.domain.PlannedExamReminder
 import com.adheesh.gid.feature.timetable.data.TimetableRepository
 import com.adheesh.gid.feature.timetable.domain.ReminderPlanner
 import kotlinx.coroutines.CoroutineScope
@@ -161,6 +164,39 @@ class ClassReminderScheduler(
         // Android caps alarms per app (about 500); a week of classes is far less.
         const val MAX_REMINDERS = 100
         const val REQUEST_BASE = 50_000
+    }
+}
+
+// ── Exam reminders (SPEC §3 Exams) ───────────────────────────────────────────
+// Same idea as class reminders: forget the previous plan, then arm the next
+// reminders from scratch. The receiver reads the exam fresh when it fires.
+class ExamReminderScheduler(
+    private val context     : Context,
+    private val exams       : ExamRepository,
+    private val preferences : GIDPreferences,
+) {
+    suspend fun replan() {
+        val previous = preferences.scheduledExamReminderCount.first()
+        repeat(previous) { ExactAlarms.cancel(context, intent(it, null)) }
+
+        val plan = ExamReminderPlanner.plan(exams.getUpcoming(), ZonedDateTime.now())
+        plan.forEachIndexed { index, reminder ->
+            ExactAlarms.setWhileIdle(context, reminder.triggerAt, intent(index, reminder))
+        }
+        preferences.setScheduledExamReminderCount(plan.size)
+    }
+
+    private fun intent(index: Int, reminder: PlannedExamReminder?): PendingIntent {
+        val intent = Intent(context, ExamReminderReceiver::class.java).setAction(ExamReminderReceiver.ACTION_REMIND)
+        if (reminder != null) {
+            intent.putExtra(ExamReminderReceiver.EXTRA_EXAM_ID, reminder.examId)
+                .putExtra(ExamReminderReceiver.EXTRA_STEP, reminder.step.name)
+        }
+        return PendingIntent.getBroadcast(context, REQUEST_BASE + index, intent, PI_FLAGS)
+    }
+
+    private companion object {
+        const val REQUEST_BASE = 60_000
     }
 }
 

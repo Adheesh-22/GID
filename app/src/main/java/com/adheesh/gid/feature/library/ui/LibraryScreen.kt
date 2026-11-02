@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
@@ -51,6 +52,7 @@ import com.adheesh.gid.core.designsystem.EmptyText
 import com.adheesh.gid.core.designsystem.GIDCoral
 import com.adheesh.gid.core.designsystem.GIDCyan
 import com.adheesh.gid.core.designsystem.GIDMutedText
+import com.adheesh.gid.core.designsystem.GIDPeriwinkle
 import com.adheesh.gid.core.designsystem.GIDSurface
 import com.adheesh.gid.core.designsystem.GIDText
 import com.adheesh.gid.core.designsystem.GIDTextField
@@ -70,6 +72,7 @@ fun LibraryScreen(
     captureActions : CaptureActions,
     onOpenSubject  : (String) -> Unit,
     onOpenCapture  : (String) -> Unit,
+    onOpenExams    : () -> Unit,
     modifier       : Modifier = Modifier,
     requestedSort  : List<String> = emptyList(),
     onRequestUsed  : () -> Unit = {},
@@ -101,7 +104,16 @@ fun LibraryScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier            = Modifier.fillMaxSize(),
         ) {
-            item { ScreenTitle(stringResource(R.string.library_title)) }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ScreenTitle(stringResource(R.string.library_title), Modifier.weight(1f))
+                    TextButton(onClick = onOpenExams) {
+                        Icon(Icons.Rounded.Event, contentDescription = null, tint = GIDPeriwinkle)
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.exams_title), color = GIDText)
+                    }
+                }
+            }
             item {
                 GIDTextField(
                     value         = query,

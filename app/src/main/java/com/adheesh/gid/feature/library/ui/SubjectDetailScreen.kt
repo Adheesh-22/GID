@@ -53,6 +53,7 @@ import com.adheesh.gid.core.designsystem.GIDMutedText
 import com.adheesh.gid.core.designsystem.GIDSurface
 import com.adheesh.gid.core.designsystem.GIDText
 import com.adheesh.gid.core.designsystem.SectionTitle
+import com.adheesh.gid.feature.exams.ui.ExamRow
 import com.adheesh.gid.feature.library.viewmodel.SubjectDetailViewModel
 
 // ── SubjectDetail (SPEC §2.8) ────────────────────────────────────────────────
@@ -63,11 +64,13 @@ fun SubjectDetailScreen(
     viewModel     : SubjectDetailViewModel,
     onBack        : () -> Unit,
     onOpenCapture : (String) -> Unit,
+    onOpenExam    : (String) -> Unit,
     modifier      : Modifier = Modifier,
 ) {
     val subject  by viewModel.subject.collectAsState()
     val sections by viewModel.sections.collectAsState()
     val headings by viewModel.headings.collectAsState()
+    val exams    by viewModel.upcomingExams.collectAsState()
     val current = subject ?: return
     val subjectById = remember(current) { mapOf(current.id to current) }
 
@@ -110,6 +113,11 @@ fun SubjectDetailScreen(
                     }
                 }
             }
+        }
+
+        // ── Upcoming exams and assignments for this subject (SPEC §2.10) ─────
+        items(exams, key = { "x-${it.id}" }) { exam ->
+            ExamRow(exam, current, onClick = { onOpenExam(exam.id) })
         }
 
         if (sections.all { it.items.isEmpty() }) item { EmptyText(stringResource(R.string.subject_empty)) }

@@ -91,7 +91,72 @@
     <string name="sort_note_field">Note (optional)</string>
     <string name="sort_due">Due date</string>
     <string name="sort_pick_due">Pick a date</string>
-    <string name="sort_create_task">Also create a task</string>
+    <string name="sort_also_create">Also create</string>
+    <string name="sort_also_nothing">Nothing</string>
+    <string name="sort_also_task">Task</string>
+    <string name="sort_exam_needs_subject">Pick a subject to also add it as an exam or assignment.</string>
+
+    <!-- Exams (SPEC §2.10) -->
+    <string name="exams_title">Exams</string>
+    <string name="exams_upcoming">Upcoming</string>
+    <string name="exams_empty">Nothing coming up. Tap + to add an exam or assignment.</string>
+    <string name="exams_past">Past &amp; done (%1$d)</string>
+    <string name="exam_kind_exam">Exam</string>
+    <string name="exam_kind_test">Test</string>
+    <string name="exam_kind_assignment">Assignment</string>
+    <string name="exam_kind_project">Project</string>
+    <string name="exam_add">Add exam or assignment</string>
+    <string name="exam_edit">Edit</string>
+    <string name="exam_kind">Kind</string>
+    <string name="exam_title_field">Title (e.g. Mid-sem, Lab record)</string>
+    <string name="exam_when">When</string>
+    <string name="exam_pick_date">Pick a date</string>
+    <string name="exam_pick_time">Add a time</string>
+    <string name="exam_room_field">Room (optional)</string>
+    <string name="exam_notes_field">Notes (syllabus, what to bring…)</string>
+    <string name="exam_needs_subject_date">Pick a subject and a date</string>
+    <string name="exam_done">Done</string>
+    <string name="exam_submitted">Submitted</string>
+    <string name="exam_mark_done">Mark done</string>
+    <string name="exam_mark_submitted">Mark submitted</string>
+    <string name="exam_mark_not_done">Undo</string>
+    <string name="exam_saved_items">Saved for this subject</string>
+    <string name="exam_saved_empty">Nothing saved for this subject yet. Captures you sort into it show up here.</string>
+    <string name="exam_delete_title">Delete this?</string>
+    <string name="exam_delete_body">Its reminders are cancelled too. Saved Library items stay.</string>
+    <string name="countdown_today">Today</string>
+    <string name="countdown_tomorrow">Tomorrow</string>
+    <plurals name="countdown_days">
+        <item quantity="one">in %1$d day</item>
+        <item quantity="other">in %1$d days</item>
+    </plurals>
+    <plurals name="countdown_weeks">
+        <item quantity="one">in %1$d week</item>
+        <item quantity="other">in %1$d weeks</item>
+    </plurals>
+    <plurals name="countdown_past">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <string name="widget_label">GID capture</string>
+    <string name="widget_description">Capture a photo, file or link in one tap, and see the next exam.</string>
+    <string name="widget_next">Next: %1$s</string>
+    <string name="tile_label">GID capture</string>
+    <string name="tile_add_text">Capture from the pull-down shade</string>
+    <string name="tile_add">Add tile</string>
+    <string name="tile_added">Added</string>
+    <string name="home_next_up">Next up</string>
+    <string name="home_nothing_due">Nothing due. Enjoy it.</string>
+    <string name="channel_exams">Exam reminders</string>
+    <string name="notif_exam_week">In 7 days. A good time to start revising.</string>
+    <string name="notif_exam_tomorrow">Tomorrow</string>
+    <string name="notif_exam_today">Today. All the best!</string>
+    <string name="notif_due_tomorrow">Due tomorrow</string>
+    <string name="notif_due_today">Due today</string>
+    <plurals name="notif_exam_saved">
+        <item quantity="one">1 item saved for this subject in Library.</item>
+        <item quantity="other">%1$d items saved for this subject in Library.</item>
+    </plurals>
     <string name="sort_name_field">Name</string>
     <string name="sort_choose_type">Choose a type to save</string>
 
@@ -224,8 +289,35 @@
     <string name="auth_error_unknown">Something went wrong. Please try again.</string>
 
     <!-- Home -->
-    <string name="home_hello_name">Hello %1$s</string>
-    <string name="home_hello_there">Hello there</string>
+    <string name="home_hello_name">Hello,\n%1$s</string>
+    <string name="home_hello_there">Hello,\nThere</string>
+    <string name="cd_personalise">Personalise Home</string>
+    <string name="personalise_title">Personalise</string>
+    <string name="personalise_name">Name on Home</string>
+    <string name="personalise_name_reset">Reset</string>
+    <string name="personalise_name_hint">Only changes the greeting. Leave it empty to use your first name.</string>
+    <string name="personalise_font">Font</string>
+    <string name="personalise_color">Colour</string>
+    <string name="personalise_background">Background</string>
+    <string name="personalise_photo_choose">Choose photo</string>
+    <string name="personalise_photo_busy">Blurring…</string>
+    <string name="personalise_photo_remove">Remove</string>
+    <string name="personalise_photo_failed">Couldn\'t open that photo. Try another one.</string>
+    <string name="personalise_photo_hint">Blurred and kept on this phone only. Shows on Home, Calendar, Library and History.</string>
+    <string name="personalise_dim">Dim: %1$d%%</string>
+    <string name="font_gid">GID</string>
+    <string name="font_dm_sans">DM Sans</string>
+    <string name="font_serif">Serif</string>
+    <string name="font_mono">Mono</string>
+    <string name="font_script">Script</string>
+    <string name="font_light">Light</string>
+    <string name="color_text">White</string>
+    <string name="color_cyan">Cyan</string>
+    <string name="color_coral">Coral</string>
+    <string name="color_mustard">Mustard</string>
+    <string name="color_periwinkle">Periwinkle</string>
+    <string name="color_sage">Sage</string>
+    <string name="color_green">Green</string>
     <string name="home_alarm">Alarm</string>
     <string name="home_no_alarms">No alarms</string>
     <string name="home_timetable">Timetable</string>

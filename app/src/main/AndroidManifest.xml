@@ -71,6 +71,16 @@
 
         <!-- 'Share to GID' from any app: text and links, images, PDFs (SPEC §2.8).
              Rotation is handled in place so a capture is never saved twice. -->
+        <!-- Widget and Quick Settings tile capture (SPEC §2.11) -->
+        <activity
+            android:name=".feature.capture.ui.QuickCaptureActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.GID.Share"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
+
         <activity
             android:name=".feature.capture.ui.ShareReceiverActivity"
             android:exported="true"
@@ -116,6 +126,35 @@
         <receiver android:name=".core.scheduling.TimerReceiver" android:exported="false" />
         <receiver android:name=".core.scheduling.ClassReminderReceiver" android:exported="false" />
         <receiver android:name=".core.scheduling.EveningPromptReceiver" android:exported="false" />
+        <receiver android:name=".core.scheduling.ExamReminderReceiver" android:exported="false" />
+
+        <!-- Home-screen widget (SPEC §2.11) -->
+        <receiver
+            android:name=".feature.widget.GIDWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/gid_widget_info" />
+        </receiver>
+
+        <!-- Quick Settings tile (SPEC §2.11) -->
+        <service
+            android:name=".feature.capture.ui.CaptureTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_camera"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="false" />
+        </service>
         <receiver android:name=".core.scheduling.SessionActionReceiver" android:exported="false" />
 
         <!-- Re-plans every alarm after reboot, clock / time-zone change and app update -->

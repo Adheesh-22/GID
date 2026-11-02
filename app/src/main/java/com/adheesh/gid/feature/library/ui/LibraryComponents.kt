@@ -277,7 +277,7 @@ fun CaptureButton(
 }
 
 @Composable
-private fun CaptureMenuItem(icon: ImageVector, text: String, onClick: () -> Unit) {
+internal fun CaptureMenuItem(icon: ImageVector, text: String, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier

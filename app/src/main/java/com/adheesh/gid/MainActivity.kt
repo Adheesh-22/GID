@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
             Notifications.OPEN_PROGRESS -> openProgress.value = true
             Notifications.OPEN_LIBRARY  -> container.libraryRequest.value =
                 LibraryRequest(intent.getStringArrayExtra(Notifications.EXTRA_CAPTURE_IDS)?.toList().orEmpty())
+            Notifications.OPEN_EXAM     -> container.examRequest.value = intent.getStringExtra(Notifications.EXTRA_EXAM_ID) ?: return
             else -> return
         }
         intent.removeExtra(Notifications.EXTRA_OPEN)   // don't reopen on rotation

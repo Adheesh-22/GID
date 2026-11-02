@@ -1,8 +1,5 @@
 package com.adheesh.gid.feature.home.ui
 
-import androidx.compose.ui.text.font.FontWeight // fix : orientation of the home screen
-import androidx.compose.ui.unit.sp // fix : orientation of the home screen
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CollectionsBookmark
+import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -47,8 +45,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.adheesh.gid.R
+import com.adheesh.gid.core.database.ExamEntity
 import com.adheesh.gid.core.database.Priority
+import com.adheesh.gid.core.database.SubjectEntity
 import com.adheesh.gid.core.designsystem.Dot
 import com.adheesh.gid.core.designsystem.GIDCard
 import com.adheesh.gid.core.designsystem.GIDCoral
@@ -64,7 +65,13 @@ import com.adheesh.gid.core.designsystem.ProfileAvatar
 import com.adheesh.gid.core.util.formatMinutesOfDay
 import com.adheesh.gid.core.util.formatShort
 import com.adheesh.gid.core.util.today
+import com.adheesh.gid.feature.appearance.ui.Greeting
+import com.adheesh.gid.feature.appearance.ui.PersonaliseSheet
 import com.adheesh.gid.feature.capture.data.CaptureActions
+import com.adheesh.gid.feature.exams.ui.CountdownChip
+import com.adheesh.gid.feature.exams.ui.countdown
+import com.adheesh.gid.feature.exams.ui.displayTitle
+import com.adheesh.gid.feature.exams.ui.whenText
 import com.adheesh.gid.feature.home.viewmodel.HomeViewModel
 import com.adheesh.gid.feature.library.ui.CaptureButton
 import com.adheesh.gid.feature.tasks.ui.DeleteTaskDialog
@@ -78,6 +85,11 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 // ── Home (SPEC §2.2) ─────────────────────────────────────────────────────────
+private val GREETING_SIZE = 56.sp
+private val GREETING_LINE = 60.sp
+private val GREETING_TOP  = 24.dp
+private val AVATAR_SIZE   = 56.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -89,6 +101,9 @@ fun HomeScreen(
     unsortedCount    : Int,
     onOpenLibrary    : () -> Unit,
     captureActions   : CaptureActions,
+    nextExam         : ExamEntity?,
+    nextExamSubject  : SubjectEntity?,
+    onOpenExams      : () -> Unit,
     modifier         : Modifier = Modifier,
 ) {
     val name       by viewModel.name.collectAsState()
@@ -104,6 +119,26 @@ fun HomeScreen(
     var editorOpen  by rememberSaveable { mutableStateOf(false) }
     var editingId   by rememberSaveable { mutableStateOf<String?>(null) }
     var deletingId  by rememberSaveable { mutableStateOf<String?>(null) }
+    var personaliseOpen by rememberSaveable { mutableStateOf(false) }
+    val appearance  by viewModel.appearance.collectAsState()
+    val photoBusy   by viewModel.photoBusy.collectAsState()
+    val photoFailed by viewModel.photoFailed.collectAsState()
+
+    if (personaliseOpen) {
+        PersonaliseSheet(
+            appearance    = appearance,
+            profileName   = name,
+            onName        = viewModel::setHomeName,
+            onFont        = viewModel::setFont,
+            onColor       = viewModel::setColor,
+            onDim         = viewModel::setDim,
+            onPickPhoto   = viewModel::setBackground,
+            onRemovePhoto = viewModel::removeBackground,
+            photoBusy     = photoBusy,
+            photoFailed   = photoFailed,
+            onDismiss     = { personaliseOpen = false },
+        )
+    }
 
     Column(
         modifier = modifier
@@ -113,30 +148,29 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         // ── Greeting ─────────────────────────────────────────────────────────
+        // Tap the greeting to change its name, font, colour and the background.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top // Keeps the avatar at the top right
+            verticalAlignment = Alignment.Top,
         ) {
-            Text(
-                // Formatted with a comma and a newline to match the reference
-                text     = name?.let { "Hello,\n${it.substringBefore(' ')}" } ?: "Hello,\nThere",
-                style    = MaterialTheme.typography.displayLarge,
-                fontSize = 56.sp, // Made the text larger
-                lineHeight = 60.sp,
-                fontWeight = FontWeight.ExtraBold, // Made the text thicker
-                color    = GIDText,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+            Greeting(
+                name       = appearance.greetingName(name),
+                appearance = appearance,
+                fontSize   = GREETING_SIZE,
+                lineHeight = GREETING_LINE,
+                modifier   = Modifier
                     .weight(1f)
-                    .padding(top = 24.dp) // Pushes the text a bit lower
+                    .padding(top = GREETING_TOP)
+                    .clickable(onClickLabel = stringResource(R.string.cd_personalise)) { personaliseOpen = true },
             )
             ProfileAvatar(
-                photoPath = photo, 
-                name = name, 
-                size = 56.dp, // Slightly larger avatar to balance the large text
-                onClick = onOpenSettings
+                photoPath = photo,
+                name      = name,
+                size      = AVATAR_SIZE,
+                onClick   = onOpenSettings,
+                // Centred on the 'Hello,' line rather than above it.
+                modifier  = Modifier.padding(top = GREETING_TOP + (GREETING_LINE.value.dp - AVATAR_SIZE) / 2),
             )
         }
 
@@ -193,6 +227,36 @@ fun HomeScreen(
                 modifier = Modifier.weight(1f),
             )
             CaptureButton(captureActions, onSaved = {}, modifier = Modifier.size(44.dp))
+        }
+
+        // ── Next up: the soonest exam or assignment (SPEC §2.10) ─────────────
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .background(GIDSurface)
+                .clickable(onClick = onOpenExams)
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+        ) {
+            Icon(Icons.Rounded.Event, contentDescription = null, tint = GIDPeriwinkle)
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.home_next_up), style = MaterialTheme.typography.labelLarge, color = GIDMutedText)
+                if (nextExam == null) {
+                    Text(stringResource(R.string.home_nothing_due), style = MaterialTheme.typography.titleMedium, color = GIDText)
+                } else {
+                    Text(
+                        listOfNotNull(nextExamSubject?.name, nextExam.displayTitle()).joinToString(" · "),
+                        style    = MaterialTheme.typography.titleMedium,
+                        color    = GIDText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(nextExam.whenText(), style = MaterialTheme.typography.bodySmall, color = GIDMutedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            if (nextExam != null) CountdownChip(nextExam.countdown())
         }
 
         // ── Left column + tall Tasks card ────────────────────────────────────

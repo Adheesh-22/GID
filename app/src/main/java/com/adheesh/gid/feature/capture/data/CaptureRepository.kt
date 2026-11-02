@@ -6,6 +6,7 @@ import com.adheesh.gid.core.database.CaptureEntity
 import com.adheesh.gid.core.database.CaptureKind
 import com.adheesh.gid.core.database.CaptureStatus
 import com.adheesh.gid.core.database.CaptureType
+import com.adheesh.gid.core.database.ExamKind
 import com.adheesh.gid.core.database.GIDDatabase
 import com.adheesh.gid.core.database.Priority
 import com.adheesh.gid.core.database.TaskEntity
@@ -17,9 +18,11 @@ import com.adheesh.gid.core.util.toLocalDateTime
 import com.adheesh.gid.feature.capture.domain.CaptureTimeResolver
 import com.adheesh.gid.feature.capture.domain.LinkExtractor
 import com.adheesh.gid.feature.capture.domain.SubjectSuggester
+import com.adheesh.gid.feature.exams.data.ExamDraft
+import com.adheesh.gid.feature.exams.data.ExamRepository
+import java.io.File
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import java.io.File
 
 /** What the Sort sheet decided for one or more captures. */
 data class SortChoice(
@@ -31,6 +34,8 @@ data class SortChoice(
     val note        : String?   = null,
     val dueEpochDay : Long?     = null,
     val createTask  : Boolean   = false,
+    /** A Deadline can instead become an exam or assignment (needs a subject). */
+    val createExam  : ExamKind? = null,
 )
 
 // ── Capture Inbox (SPEC §2.8) ────────────────────────────────────────────────
@@ -59,6 +64,7 @@ interface CaptureRepository {
 class CaptureRepositoryImpl(
     private val db    : GIDDatabase,
     private val files : CaptureFileStore,
+    private val exams : ExamRepository,
 ) : CaptureRepository {
 
     private val dao = db.captureDao()
@@ -123,7 +129,30 @@ class CaptureRepositoryImpl(
 
     override suspend fun discardFile(file: File) = files.delete(file.absolutePath)
 
-    override suspend fun sort(ids: List<String>, choice: SortChoice) = db.withTransaction {
+    override suspend fun sort(ids: List<String>, choice: SortChoice) {
+        sortRows(ids, choice)
+        // Outside the transaction: saving an exam re-plans reminders and the widget.
+        val kind = choice.createExam ?: return
+        val subjectId = choice.subjectId ?: return
+        val due = choice.dueEpochDay ?: return
+        if (choice.type != CaptureType.DEADLINE) return
+        dao.getAll(ids).forEach { capture ->
+            if (db.examDao().getBySource(capture.id) != null) return@forEach
+            exams.save(
+                ExamDraft(
+                    id              = null,
+                    subjectId       = subjectId,
+                    title           = capture.title.ifBlank { capture.note.lineSequence().firstOrNull()?.take(80).orEmpty() },
+                    kind            = kind,
+                    dateEpochDay    = due,
+                    notes           = listOfNotNull(capture.note.takeIf { it.isNotBlank() && it != capture.title }, capture.url).joinToString("\n"),
+                    sourceCaptureId = capture.id,
+                )
+            )
+        }
+    }
+
+    private suspend fun sortRows(ids: List<String>, choice: SortChoice) = db.withTransaction {
         val now = nowMillis()
         dao.getAll(ids).forEach { capture ->
             val title = choice.title ?: capture.title

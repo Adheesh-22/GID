@@ -11,9 +11,11 @@ import com.adheesh.gid.core.scheduling.AlarmScheduler
 import com.adheesh.gid.core.scheduling.ClassReminderScheduler
 import com.adheesh.gid.core.scheduling.DailyMaintenanceWorker
 import com.adheesh.gid.core.scheduling.EveningPromptScheduler
+import com.adheesh.gid.core.scheduling.ExamReminderScheduler
 import com.adheesh.gid.core.scheduling.TimerScheduler
 import com.adheesh.gid.feature.alarm.data.ActivityTypeRepositoryImpl
 import com.adheesh.gid.feature.alarm.data.AlarmRepositoryImpl
+import com.adheesh.gid.feature.appearance.data.AppearanceStore
 import com.adheesh.gid.feature.auth.data.AuthRepository
 import com.adheesh.gid.feature.auth.data.SupabaseAuthRepository
 import com.adheesh.gid.feature.calendar.data.HolidayRepositoryImpl
@@ -21,8 +23,8 @@ import com.adheesh.gid.feature.capture.data.CaptureActions
 import com.adheesh.gid.feature.capture.data.CaptureFileStore
 import com.adheesh.gid.feature.capture.data.CaptureRepository
 import com.adheesh.gid.feature.capture.data.CaptureRepositoryImpl
-import com.adheesh.gid.feature.subjects.data.SubjectRepository
-import com.adheesh.gid.feature.subjects.data.SubjectRepositoryImpl
+import com.adheesh.gid.feature.exams.data.ExamRepository
+import com.adheesh.gid.feature.exams.data.ExamRepositoryImpl
 import com.adheesh.gid.feature.sessions.data.SessionManager
 import com.adheesh.gid.feature.sessions.data.SessionRepositoryImpl
 import com.adheesh.gid.feature.settings.data.BackupManager
@@ -30,19 +32,25 @@ import com.adheesh.gid.feature.settings.data.ProfilePhotoStore
 import com.adheesh.gid.feature.settings.data.ProfileRepository
 import com.adheesh.gid.feature.settings.data.ProfileRepositoryImpl
 import com.adheesh.gid.feature.settings.data.SupabaseProfileRemoteSource
+import com.adheesh.gid.feature.subjects.data.SubjectRepository
+import com.adheesh.gid.feature.subjects.data.SubjectRepositoryImpl
 import com.adheesh.gid.feature.tasks.data.TaskRepositoryImpl
 import com.adheesh.gid.feature.timetable.data.TimetableRepositoryImpl
+import com.adheesh.gid.feature.widget.GIDWidget
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 // ── AppContainer – manual DI (no Hilt in V1, RULES §3) ───────────────────────
 // Builds every repository and scheduler once. Screens get what they need from
@@ -78,13 +86,15 @@ class AppContainer(private val context: Context) {
     )
     val preferences = GIDPreferences(context)
     val photoStore  = ProfilePhotoStore(context, preferences)
+    val appearanceStore = AppearanceStore(context, preferences)
 
     // ── Repositories ─────────────────────────────────────────────────────────
     val taskRepository         = TaskRepositoryImpl(database.taskDao())
     val subjectRepository: SubjectRepository = SubjectRepositoryImpl(database)
     val timetableRepository    = TimetableRepositoryImpl(database.timetableDao(), subjectRepository)
     val captureFiles           = CaptureFileStore(context)
-    val captureRepository: CaptureRepository = CaptureRepositoryImpl(database, captureFiles)
+    val examRepository: ExamRepository = ExamRepositoryImpl(database.examDao(), onChanged = { onExamsChanged() })
+    val captureRepository: CaptureRepository = CaptureRepositoryImpl(database, captureFiles, examRepository)
     val captureActions         = CaptureActions(captureRepository, captureFiles, appScope)
     val backupManager          = BackupManager(context, database, preferences, captureFiles)
     val holidayRepository      = HolidayRepositoryImpl(database.holidayDao())
@@ -108,6 +118,7 @@ class AppContainer(private val context: Context) {
     val timerScheduler         = TimerScheduler(context)
     val classReminderScheduler = ClassReminderScheduler(context, timetableRepository, holidayRepository, preferences)
     val eveningPromptScheduler = EveningPromptScheduler(context, preferences)
+    val examReminderScheduler  = ExamReminderScheduler(context, examRepository, preferences)
     val sessionManager         = SessionManager(context, sessionRepository, activityTypeRepository, timerScheduler)
 
     // ── Debug seeding ────────────────────────────────────────────────────────
@@ -115,6 +126,9 @@ class AppContainer(private val context: Context) {
 
     /** Set by the share dialog or evening notification: open Library (and maybe sort these). */
     val libraryRequest = MutableStateFlow<LibraryRequest?>(null)
+
+    /** Set by an exam reminder: open that exam's page. */
+    val examRequest = MutableStateFlow<String?>(null)
 
     /** Date tapped on Home's calendar strip; the Calendar tab opens on it. */
     val calendarSelection = MutableStateFlow<LocalDate?>(null)
@@ -127,13 +141,29 @@ class AppContainer(private val context: Context) {
         runCatching { alarmRepository.observeAll().first().forEach { alarmScheduler.schedule(it) } }
         runCatching { classReminderScheduler.replan() }
         runCatching { eveningPromptScheduler.schedule() }
+        runCatching { examReminderScheduler.replan() }
         runCatching { sessionManager.repairRunning() }
+        // Runs once a day too, so the widget's countdown moves on after midnight.
+        GIDWidget.refresh(context)
+    }
+
+    /** After any exam is added, edited, done or deleted. */
+    private suspend fun onExamsChanged() {
+        runCatching { examReminderScheduler.replan() }
     }
 
     /** Called once from GIDApplication.onCreate. */
     fun onAppStart() {
         Notifications.createChannels(context)
         DailyMaintenanceWorker.enqueue(context)
+        // Any change to the Inbox count or upcoming exams, from a screen, the
+        // share sheet or a receiver, redraws the home-screen widget.
+        appScope.launch {
+            combine(captureRepository.observeInboxCount(), examRepository.observeUpcoming()) { count, exams -> count to exams }
+                .distinctUntilChanged()
+                .drop(1)   // the first value is what the widget already shows
+                .collect { GIDWidget.refresh(context) }
+        }
         appScope.launch {
             if (preferences.isFirstLaunch.first()) {
                 if (database.activityTypeDao().count() == 0) {

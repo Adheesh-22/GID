@@ -2,17 +2,23 @@ package com.adheesh.gid.feature.calendar.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.adheesh.gid.core.database.ExamEntity
 import com.adheesh.gid.core.database.HolidayEntity
 import com.adheesh.gid.core.database.Priority
+import com.adheesh.gid.core.database.SubjectEntity
 import com.adheesh.gid.core.database.TaskEntity
 import com.adheesh.gid.core.util.newId
 import com.adheesh.gid.core.util.nowMillis
 import com.adheesh.gid.core.util.today
 import com.adheesh.gid.core.util.weekStart
 import com.adheesh.gid.feature.calendar.data.HolidayRepository
+import com.adheesh.gid.feature.exams.data.ExamRepository
+import com.adheesh.gid.feature.subjects.data.SubjectRepository
 import com.adheesh.gid.feature.tasks.data.TaskActions
 import com.adheesh.gid.feature.tasks.data.TaskDraft
 import com.adheesh.gid.feature.tasks.data.TaskRepository
+import java.time.LocalDate
+import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,8 +29,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.YearMonth
 
 /** The visible month grid: always whole weeks, Monday first. */
 data class MonthGrid(val month: YearMonth, val days: List<LocalDate>) {
@@ -43,6 +47,8 @@ class CalendarViewModel(
     private val tasks    : TaskRepository,
     private val holidays : HolidayRepository,
     private val actions  : TaskActions,
+    exams                : ExamRepository,
+    subjects             : SubjectRepository,
     initialDate          : LocalDate?,
 ) : ViewModel() {
 
@@ -61,6 +67,18 @@ class CalendarViewModel(
     val taskDays: StateFlow<Set<Long>> = grid.flatMapLatest { g ->
         tasks.observeTaskDays(g.days.first().toEpochDay(), g.days.last().toEpochDay()).map { it.toSet() }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    /** Days in the visible grid with an exam or assignment (purple dots). */
+    val examDays: StateFlow<Set<Long>> = grid.flatMapLatest { g ->
+        exams.observeBetween(g.days.first().toEpochDay(), g.days.last().toEpochDay()).map { list -> list.map { it.dateEpochDay }.toSet() }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    val dayExams: StateFlow<List<ExamEntity>> = _selected.flatMapLatest { exams.observeBetween(it.toEpochDay(), it.toEpochDay()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val subjectById: StateFlow<Map<String, SubjectEntity>> = subjects.observeAll()
+        .map { list -> list.associateBy { it.id } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Holiday name by epochDay (name may be blank). */
     val holidayByDay: StateFlow<Map<Long, String>> = holidays.observeAll()

@@ -13,6 +13,7 @@ import androidx.work.WorkerParameters
 import com.adheesh.gid.GIDApplication
 import com.adheesh.gid.app.AppContainer
 import com.adheesh.gid.core.notifications.Notifications
+import com.adheesh.gid.feature.exams.domain.ExamReminderStep
 import java.util.concurrent.TimeUnit
 
 private val Context.container: AppContainer
@@ -66,6 +67,27 @@ class ClassReminderReceiver : BroadcastReceiver() {
         const val EXTRA_SUBJECT = "subject"
         const val EXTRA_ROOM    = "room"
         const val EXTRA_START   = "start_minutes"
+    }
+}
+
+class ExamReminderReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val examId = intent.getStringExtra(EXTRA_EXAM_ID) ?: return
+        val step = ExamReminderStep.entries.firstOrNull { it.name == intent.getStringExtra(EXTRA_STEP) } ?: return
+        launchAsync {
+            val container = context.container
+            // Read it now: it may have been edited, done or deleted since it was planned.
+            val exam = container.examRepository.get(examId)?.takeIf { it.completedAt == null } ?: return@launchAsync
+            val subject = container.subjectRepository.get(exam.subjectId)
+            val saved = container.database.captureDao().countForSubject(exam.subjectId)
+            Notifications.showExamReminder(context, exam, subject?.name, step, saved)
+        }
+    }
+
+    companion object {
+        const val ACTION_REMIND = "com.adheesh.gid.action.EXAM_REMINDER"
+        const val EXTRA_EXAM_ID = "exam_id"
+        const val EXTRA_STEP    = "step"
     }
 }
 

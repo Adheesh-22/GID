@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 //   eveningPromptTime      – minutes from midnight when the 21:00 prompt fires
 //   defaultReminderMinutes – how many minutes before class a reminder fires
 //   profilePhotoPath       – absolute path to the locally stored profile photo
+//   homeName / Font / Color, backgroundPath / Dim – Home and app look (SPEC §2.2)
 //
 // Using property delegate extension on Context to get a single instance.
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
@@ -36,11 +37,19 @@ class GIDPreferences(context: Context) {
         // How many class-reminder alarms are currently scheduled, so a re-plan
         // can cancel exactly the old ones before scheduling new ones.
         val SCHEDULED_REMINDER_COUNT  = intPreferencesKey("scheduled_reminder_count")
+        val SCHEDULED_EXAM_REMINDER_COUNT = intPreferencesKey("scheduled_exam_reminder_count")
         val NOTIFICATION_RATIONALE_SHOWN = booleanPreferencesKey("notification_rationale_shown")
+        // Appearance: local only, never synced or backed up.
+        val HOME_NAME                 = stringPreferencesKey("home_name")
+        val HOME_NAME_FONT            = stringPreferencesKey("home_name_font")
+        val HOME_NAME_COLOR           = stringPreferencesKey("home_name_color")
+        val BACKGROUND_PATH           = stringPreferencesKey("background_path")
+        val BACKGROUND_DIM            = floatPreferencesKey("background_dim")
 
         // Defaults
         const val DEFAULT_EVENING_PROMPT_MINUTES = 21 * 60   // 21:00
         const val DEFAULT_REMINDER_MINUTES_VALUE = 10
+        const val DEFAULT_BACKGROUND_DIM         = 0.45f
     }
 
     // ── Flows for observation ─────────────────────────────────────────────────
@@ -68,9 +77,17 @@ class GIDPreferences(context: Context) {
 
     val scheduledReminderCount: Flow<Int> = dataStore.data.map { it[SCHEDULED_REMINDER_COUNT] ?: 0 }
 
+    val scheduledExamReminderCount: Flow<Int> = dataStore.data.map { it[SCHEDULED_EXAM_REMINDER_COUNT] ?: 0 }
+
     val notificationRationaleShown: Flow<Boolean> = dataStore.data.map {
         it[NOTIFICATION_RATIONALE_SHOWN] ?: false
     }
+
+    val homeName: Flow<String?> = dataStore.data.map { it[HOME_NAME] }
+    val homeNameFont: Flow<String?> = dataStore.data.map { it[HOME_NAME_FONT] }
+    val homeNameColor: Flow<String?> = dataStore.data.map { it[HOME_NAME_COLOR] }
+    val backgroundPath: Flow<String?> = dataStore.data.map { it[BACKGROUND_PATH] }
+    val backgroundDim: Flow<Float> = dataStore.data.map { it[BACKGROUND_DIM] ?: DEFAULT_BACKGROUND_DIM }
 
     // ── Write helpers ─────────────────────────────────────────────────────────
 
@@ -90,6 +107,10 @@ class GIDPreferences(context: Context) {
         dataStore.edit { it[SCHEDULED_REMINDER_COUNT] = count }
     }
 
+    suspend fun setScheduledExamReminderCount(count: Int) {
+        dataStore.edit { it[SCHEDULED_EXAM_REMINDER_COUNT] = count }
+    }
+
     suspend fun setNotificationRationaleShown() {
         dataStore.edit { it[NOTIFICATION_RATIONALE_SHOWN] = true }
     }
@@ -107,6 +128,31 @@ class GIDPreferences(context: Context) {
             if (path == null) it.remove(PROFILE_PHOTO_PATH)
             else it[PROFILE_PHOTO_PATH] = path
         }
+    }
+
+    /** A blank [name] goes back to the profile's first name. */
+    suspend fun setHomeName(name: String?) {
+        dataStore.edit {
+            if (name.isNullOrBlank()) it.remove(HOME_NAME) else it[HOME_NAME] = name.trim()
+        }
+    }
+
+    suspend fun setHomeNameFont(font: String) {
+        dataStore.edit { it[HOME_NAME_FONT] = font }
+    }
+
+    suspend fun setHomeNameColor(color: String) {
+        dataStore.edit { it[HOME_NAME_COLOR] = color }
+    }
+
+    suspend fun setBackgroundPath(path: String?) {
+        dataStore.edit {
+            if (path == null) it.remove(BACKGROUND_PATH) else it[BACKGROUND_PATH] = path
+        }
+    }
+
+    suspend fun setBackgroundDim(dim: Float) {
+        dataStore.edit { it[BACKGROUND_DIM] = dim }
     }
 
     suspend fun setFirstLaunchDone() {

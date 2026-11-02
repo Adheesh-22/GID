@@ -3,15 +3,17 @@ package com.adheesh.gid.feature.library.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adheesh.gid.core.database.CaptureEntity
+import com.adheesh.gid.core.database.ExamEntity
 import com.adheesh.gid.core.database.HeadingEntity
 import com.adheesh.gid.core.database.SubjectEntity
 import com.adheesh.gid.feature.capture.data.CaptureRepository
+import com.adheesh.gid.feature.exams.data.ExamRepository
 import com.adheesh.gid.feature.subjects.data.SubjectRepository
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -23,7 +25,11 @@ class SubjectDetailViewModel(
     private val subjectId : String,
     captures              : CaptureRepository,
     private val subjects  : SubjectRepository,
+    exams                 : ExamRepository,
 ) : ViewModel() {
+
+    val upcomingExams: StateFlow<List<ExamEntity>> = exams.observeUpcomingForSubject(subjectId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val subject: StateFlow<SubjectEntity?> = subjects.observe(subjectId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

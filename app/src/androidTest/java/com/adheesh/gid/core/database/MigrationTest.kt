@@ -55,4 +55,27 @@ class MigrationTest {
         assertNull(subjectOf("t4"))   // blank names don't become subjects
         db.close()
     }
+
+    @Test
+    fun version3AddsExamsAndKeepsLibrary() {
+        helper.createDatabase(dbName, 2).use { db ->
+            db.execSQL("INSERT INTO subjects (id, name, nameKey, colorHex, archived, createdAt, updatedAt) VALUES ('s1', 'DBMS', 'dbms', NULL, 0, 0, 0)")
+            db.execSQL(
+                "INSERT INTO captures (id, kind, type, status, title, note, url, filePath, mimeType, capturedAt, subjectId, suggestedSubjectId, headingId, dueEpochDay, linkedTaskId, openedAt, createdAt, updatedAt) " +
+                    "VALUES ('c1', 'TEXT', 'NOTE', 'SORTED', 'Normal forms', '', NULL, NULL, NULL, 0, 's1', NULL, NULL, NULL, NULL, NULL, 0, 0)"
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(dbName, 3, true)
+
+        db.query("SELECT COUNT(*) FROM subjects").use { c -> c.moveToFirst(); assertEquals(1, c.getInt(0)) }
+        db.query("SELECT subjectId FROM captures WHERE id = 'c1'").use { c -> c.moveToFirst(); assertEquals("s1", c.getString(0)) }
+        // The new table exists and accepts an exam.
+        db.execSQL(
+            "INSERT INTO exams (id, subjectId, title, kind, dateEpochDay, timeMinutes, room, notes, completedAt, sourceCaptureId, createdAt, updatedAt) " +
+                "VALUES ('x1', 's1', 'Mid-sem', 'EXAM', 20000, 600, NULL, '', NULL, NULL, 0, 0)"
+        )
+        db.query("SELECT COUNT(*) FROM exams").use { c -> c.moveToFirst(); assertEquals(1, c.getInt(0)) }
+        db.close()
+    }
 }

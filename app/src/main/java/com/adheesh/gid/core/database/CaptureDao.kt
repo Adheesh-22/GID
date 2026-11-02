@@ -18,6 +18,9 @@ interface CaptureDao {
     @Query("SELECT * FROM captures WHERE subjectId = :subjectId AND status = 'SORTED' ORDER BY capturedAt DESC")
     fun observeForSubject(subjectId: String): Flow<List<CaptureEntity>>
 
+    @Query("SELECT COUNT(*) FROM captures WHERE subjectId = :subjectId AND status = 'SORTED'")
+    suspend fun countForSubject(subjectId: String): Int
+
     @Query("SELECT * FROM captures WHERE id = :id")
     fun observe(id: String): Flow<CaptureEntity?>
 

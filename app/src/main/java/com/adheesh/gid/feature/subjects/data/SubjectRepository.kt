@@ -24,7 +24,7 @@ interface SubjectRepository {
     suspend fun rename(id: String, name: String)
     suspend fun setColor(id: String, colorHex: String?)
     suspend fun setArchived(id: String, archived: Boolean)
-    /** Deletes the subject and its headings; its items go back to the Inbox. */
+    /** Deletes the subject, its headings and exams; its items go back to the Inbox. */
     suspend fun delete(id: String)
 
     fun observeHeadings(subjectId: String): Flow<List<HeadingEntity>>
@@ -86,6 +86,7 @@ class SubjectRepositoryImpl(private val db: GIDDatabase) : SubjectRepository {
         // Classes keep their name; saving one again re-creates the subject.
         db.timetableDao().unlinkSubject(id)
         headings.deleteForSubject(id)
+        db.examDao().deleteForSubject(id)
         subjects.deleteById(id)
     }
 

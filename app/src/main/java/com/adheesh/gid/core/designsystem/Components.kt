@@ -1,6 +1,12 @@
 package com.adheesh.gid.core.designsystem
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -27,8 +34,12 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -87,7 +98,8 @@ fun GIDCard(
 
 /**
  * Floating dialog with a back arrow top-left (SPEC §1). Used for AlarmPopup,
- * TimetablePopup and the History day details.
+ * TimetablePopup and the History day details. It slides up from the bottom
+ * of the screen and slides back down before it closes.
  */
 @Composable
 fun GIDDialog(
@@ -97,38 +109,70 @@ fun GIDDialog(
     actions   : @Composable RowScope.() -> Unit = {},
     content   : @Composable ColumnScope.() -> Unit,
 ) {
+    val shown = remember { MutableTransitionState(false) }
+    var closing by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown.targetState = true }
+    val close = {
+        closing = true
+        shown.targetState = false
+    }
+    // Tell the caller only once the slide-down has finished.
+    LaunchedEffect(closing, shown.isIdle, shown.currentState) {
+        if (closing && shown.isIdle && !shown.currentState) onDismiss()
+    }
+
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = close,
         properties       = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            color    = GIDSurface,
-            shape    = MaterialTheme.shapes.medium,
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 24.dp),
+        // Fills the window so the card can start below the screen; a tap
+        // outside the card closes it, as before.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(interactionSource = null, indication = null, onClick = close),
         ) {
-            Column(Modifier.padding(bottom = 16.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 4.dp),
-                ) {
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.cd_back), tint = GIDText)
+            AnimatedVisibility(
+                visibleState = shown,
+                enter        = slideInVertically(tween(DIALOG_IN_MILLIS, easing = FastOutSlowInEasing)) { it },
+                exit         = slideOutVertically(tween(DIALOG_OUT_MILLIS, easing = FastOutSlowInEasing)) { it },
+                modifier     = Modifier.fillMaxSize(),
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Surface(
+                        color    = GIDSurface,
+                        shape    = MaterialTheme.shapes.medium,
+                        modifier = modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 24.dp),
+                    ) {
+                        Column(Modifier.padding(bottom = 16.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 4.dp),
+                            ) {
+                                IconButton(onClick = close) {
+                                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.cd_back), tint = GIDText)
+                                }
+                                Text(
+                                    title,
+                                    style    = MaterialTheme.typography.titleLarge,
+                                    color    = GIDText,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                actions()
+                            }
+                            Column(Modifier.padding(horizontal = 16.dp), content = content)
+                        }
                     }
-                    Text(
-                        title,
-                        style    = MaterialTheme.typography.titleLarge,
-                        color    = GIDText,
-                        modifier = Modifier.weight(1f),
-                    )
-                    actions()
                 }
-                Column(Modifier.padding(horizontal = 16.dp), content = content)
             }
         }
     }
 }
+
+private const val DIALOG_IN_MILLIS  = 300
+private const val DIALOG_OUT_MILLIS = 250
 
 /** Text field styled with the GID tokens, with an inline error under it. */
 @Composable

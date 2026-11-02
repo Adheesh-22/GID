@@ -11,10 +11,16 @@ missing, else Home. 'Go to home' is always allowed.
 Calendar | Library | History | Settings. The Settings icon shows a dot while
 name or DOB is missing.
 - Library opens full-screen SubjectDetail and CaptureDetail pages (back arrow
-returns to Library).
+returns to Library). Exams and ExamDetail are full-screen pages too, opened
+from Home's 'Next up' card, Library and exam reminders.
 - Popups are dialogs over Home, not separate screens: AlarmPopup and
 TimetablePopup. History day details are also a dialog. Each has a back arrow
 top-left that closes it.
+- Motion: switching tabs slides the pages sideways, as if the five tabs sit
+side by side (left to right in bottom-bar order), fast (about 0.2 s). Pages
+and popups (Exams, ExamDetail, SubjectDetail, CaptureDetail, AlarmPopup,
+TimetablePopup, Debug) slide up from the bottom over the screen below and
+slide back down on Back. No cross-fades, so two screens never show at once.
 2. SCREENS
 2.1 Auth (placement from the reference screenshot, our own colors)
 - Curved header with logo mark; title 'Sign in to GID'; Email field;
@@ -26,7 +32,18 @@ productivity data stays on the device.
 - Inline error messages. Forgot password sends the Supabase reset email.
 2.2 Home
 - Top row: 'Hello <Name>' (fallback 'Hello there') and a circular profile
-picture (initial letter if none). Tap -> Settings.
+picture (initial letter if none), centred on the 'Hello,' line. Avatar tap ->
+Settings.
+- Tap the greeting -> Personalise sheet: the name shown on Home (default:
+first word of the profile name; only changes Home, not the profile), its font
+(GID, DM Sans, Serif, Mono, Script, Light) and colour (text, cyan, coral,
+mustard, periwinkle, sage, green), and the app background.
+- Background: 'Choose photo' picks an image; the app blurs it once and keeps
+only the blurred copy on the device. A 'Dim' slider (0-85%, default 45%)
+darkens it so cards stay readable. 'Remove' goes back to the plain
+background. The photo shows only behind Home, Calendar, Library and History;
+it fades out on Settings, on full-screen pages (Exams, subject and capture
+pages) and while AlarmPopup or TimetablePopup is open.
 - Calendar widget below: 2 rows x 7 columns (this week + next week). Today
 highlighted, a dot under dates that have tasks, green for holidays. Tap ->
 Calendar tab (tapped date preselected).
@@ -37,10 +54,14 @@ next 3 classes today (or the next class day); 'No classes' on holidays.
 - Right column, tall: Tasks card (coral). Today's tasks by priority then
 time. Row = checkbox, title, priority dot, percent done. Checkbox sets 100%.
 '+' quick add. Tap a row -> task detail sheet (same component as Calendar).
+- Inbox row, then a 'Next up' card: the next exam or assignment with its
+countdown, time and room ('Nothing due' when empty). Tap -> Exams.
 2.3 Calendar
 - Month grid with previous/next month. Today ringed, selected day filled
 coral. Dot under days with tasks. Holidays green. Long-press a date -> mark
 or unmark holiday (optional name).
+- A purple dot under days with an exam or assignment; the selected day's
+exams are listed above its tasks (tap -> ExamDetail).
 - Below the grid: left = list 'Tasks on <date>'; right top = selected task
 detail (title, description, time, estimated minutes, percent-done slider 0-
 100); right bottom = priority (Low/Medium/High, editable).
@@ -115,6 +136,27 @@ Inbox' with the suggested subject, plus 'Sort now' and 'Done'.
 manifest.json with app and database versions) to a place the user picks.
 - 'Import backup' reads such a .zip, refuses one from a newer database
 version, asks to confirm overwriting everything, then restarts the app.
+2.10 Exams (V1.2, on the device only)
+- Exams page: 'Upcoming' cards (soonest first): subject dot, title, kind chip
+(Exam, Test, Assignment, Project), date, time, room and a countdown chip
+(coral when today or tomorrow, cyan within 7 days). A collapsed 'Past & done'
+section below. '+' opens the editor.
+- Editor (bottom sheet): kind, subject (chips plus 'New subject'), title,
+date, optional time, room, notes.
+- ExamDetail: everything above, 'Mark done' ('Mark submitted' for
+assignments and projects; undo allowed), Edit, Delete (confirm), and the
+subject's saved Library items so revision starts from one place.
+- SubjectDetail shows the subject's upcoming exams at the top. Library has an
+'Exams' button next to its title.
+- Sort sheet: a Deadline can also create a Task, an Exam or an Assignment.
+2.11 Widget and Quick Settings tile
+- Home-screen widget (resizable): Camera and Paste buttons and the Inbox
+count; when wider, also Photo and an Inbox button, plus the next exam with its
+countdown. Refreshed on every capture or exam change and once a day.
+- Quick Settings tile 'GID capture': opens a small menu (Camera, Photo,
+Paste). Settings > Reliability has an 'Add capture tile' button (Android 13+).
+- Both save through the same path as the share sheet and show the same 'Saved
+to Inbox' card.
 3. BEHAVIOUR RULES
 Sessions: one table (ActivitySession) feeds both sleep and focus stats.
 - Timer: start creates a RUNNING session with endsAt; finishing or stopping
@@ -136,6 +178,13 @@ today's progress' with a slider per task and 'Move unfinished to tomorrow'.
 - 'Move to tomorrow' moves the SAME task to the next day: it leaves the
 previous day's list and keeps its percent, so the user carries on from it.
 (carriedFromId is only set on copies made by older versions.)
+Exams (plain Kotlin, unit tested):
+- Reminders: Exam and Test at 19:00 seven days before, 19:00 the day before,
+and 07:00 on the day (or 2 hours before the start, if earlier). Assignment
+and Project: 19:00 the day before and 07:00 on the day. Past times and done
+items get none; at most 60 are scheduled, re-planned after every exam change,
+reboot, time change and once a day.
+- Countdown: 'Today', 'Tomorrow', 'in N days' (up to 13), then 'in N weeks'.
 Score (plain Kotlin, unit tested):
 - Weights: HIGH 3, MEDIUM 2, LOW 1.
 - DayScore = sum(weight x percent) / sum(weight). No tasks that day = null,
@@ -180,8 +229,11 @@ NOTE, DEADLINE, IDEA, NOTICE), status (INBOX, SORTED, ARCHIVED), title, note,
 url?, filePath?, mimeType?, capturedAt, subjectId?, suggestedSubjectId?,
 headingId?, dueEpochDay?, linkedTaskId?, openedAt?. Full-text index over
 title, note and url. Files live in the app's private files/captures folder.
+- Exam: subjectId, title, kind (EXAM, TEST, ASSIGNMENT, PROJECT),
+dateEpochDay, timeMinutes?, room?, notes, completedAt?, sourceCaptureId?
 Database version 2: migration 1->2 creates one Subject per distinct timetable
-class name and links the classes to it.
+class name and links the classes to it. Version 3 adds the exams table
+(automatic migration, no data changes). Deleting a subject deletes its exams.
 Capture rules (plain Kotlin, unit tested):
 - capturedAt = the photo's EXIF time, else the gallery's date taken, else
 now; never 0 or in the future.
@@ -195,7 +247,9 @@ OTHER), isDefault
 (ALARM, TIMER, MANUAL), status (RUNNING, COMPLETED, CANCELLED), flagged
 - Profile (local copy): name, dob, phone, institution, needsSync
 DataStore (not Room): eveningPromptTime, defaultReminderMinutes,
-profilePhotoPath
+profilePhotoPath, homeName, homeNameFont, homeNameColor, backgroundPath
+(blurred copy in app files), backgroundDim. Appearance is local only and is
+not part of the backup.
 Supabase SQL (run once in the SQL Editor):
 create table public.profiles (
 id uuid primary key references auth.users(id) on delete cascade,
@@ -244,5 +298,5 @@ on, and after a reboot.
 8. OUT OF SCOPE FOR V1
 Screen-time tracking, AI features (including reading text from photos),
 friends and leaderboards, cloud sync of productivity data or captures, link
-previews, home-screen widgets and Quick Settings tiles (planned for V1.2 with
-exams), Facebook/Instagram login, recurring tasks, iOS.
+previews, exam revision packs, spaced-repetition quizzes, attendance and
+syllabus tracking (planned for a later version), Facebook/Instagram login, recurring tasks, iOS.

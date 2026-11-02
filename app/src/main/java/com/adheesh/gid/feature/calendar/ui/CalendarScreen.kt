@@ -56,6 +56,7 @@ import com.adheesh.gid.core.designsystem.GIDCoral
 import com.adheesh.gid.core.designsystem.GIDCyan
 import com.adheesh.gid.core.designsystem.GIDHolidayGreen
 import com.adheesh.gid.core.designsystem.GIDMutedText
+import com.adheesh.gid.core.designsystem.GIDPeriwinkle
 import com.adheesh.gid.core.designsystem.GIDSurface
 import com.adheesh.gid.core.designsystem.GIDText
 import com.adheesh.gid.core.designsystem.GIDTextField
@@ -65,17 +66,18 @@ import com.adheesh.gid.core.util.formatMedium
 import com.adheesh.gid.core.util.formatShort
 import com.adheesh.gid.core.util.today
 import com.adheesh.gid.feature.calendar.viewmodel.CalendarViewModel
+import com.adheesh.gid.feature.exams.ui.ExamRow
 import com.adheesh.gid.feature.tasks.ui.DeleteTaskDialog
 import com.adheesh.gid.feature.tasks.ui.PriorityEditor
 import com.adheesh.gid.feature.tasks.ui.TaskDetailPanel
 import com.adheesh.gid.feature.tasks.ui.TaskEditorDialog
 import com.adheesh.gid.feature.tasks.ui.TaskRow
-import kotlinx.coroutines.flow.StateFlow
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlinx.coroutines.flow.StateFlow
 
 // ── Calendar (SPEC §2.3) ─────────────────────────────────────────────────────
 @Composable
@@ -83,6 +85,7 @@ fun CalendarScreen(
     viewModel        : CalendarViewModel,
     externalSelection: StateFlow<LocalDate?>,
     onSelectionUsed  : () -> Unit,
+    onOpenExam       : (String) -> Unit,
     modifier         : Modifier = Modifier,
 ) {
     val grid         by viewModel.grid.collectAsState()
@@ -91,6 +94,9 @@ fun CalendarScreen(
     val holidays     by viewModel.holidayByDay.collectAsState()
     val dayTasks     by viewModel.dayTasks.collectAsState()
     val selectedTask by viewModel.selectedTask.collectAsState()
+    val examDays     by viewModel.examDays.collectAsState()
+    val dayExams     by viewModel.dayExams.collectAsState()
+    val subjectById  by viewModel.subjectById.collectAsState()
     val pending      by externalSelection.collectAsState()
 
     // A date tapped on Home's calendar strip.
@@ -141,6 +147,7 @@ fun CalendarScreen(
                             isToday     = date == today(),
                             isSelected  = date == selected,
                             hasTasks    = date.toEpochDay() in taskDays,
+                            hasExam     = date.toEpochDay() in examDays,
                             isHoliday   = date.toEpochDay() in holidays,
                             onClick     = { viewModel.select(date) },
                             onLongPress = { holidayDate = date.toEpochDay() },
@@ -163,6 +170,11 @@ fun CalendarScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = GIDHolidayGreen,
             )
+        }
+
+        // ── The selected day's exams and assignments (SPEC §2.3) ─────────────
+        dayExams.forEach { exam ->
+            ExamRow(exam, subjectById[exam.subjectId], onClick = { onOpenExam(exam.id) })
         }
 
         // ── Below the grid: list on the left, detail + priority on the right ─
@@ -281,6 +293,7 @@ private fun DayCell(
     isToday     : Boolean,
     isSelected  : Boolean,
     hasTasks    : Boolean,
+    hasExam     : Boolean,
     isHoliday   : Boolean,
     onClick     : () -> Unit,
     onLongPress : () -> Unit,
@@ -321,8 +334,9 @@ private fun DayCell(
         ) {
             Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.bodySmall, color = textColor)
         }
-        Box(Modifier.height(6.dp), contentAlignment = Alignment.Center) {
+        Row(Modifier.height(6.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
             if (hasTasks) Dot(if (isHoliday) GIDHolidayGreen else GIDCoral, size = 4.dp)
+            if (hasExam) Dot(GIDPeriwinkle, size = 4.dp)
         }
     }
 }

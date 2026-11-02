@@ -23,6 +23,7 @@ googleid                 = "1.1.1"
 work                     = "2.11.2"
 exifinterface            = "1.4.2"
 coil                     = "3.4.0"
+glance                   = "1.2.0"
 
 [libraries]
 # AndroidX core
@@ -66,6 +67,8 @@ androidx-exifinterface                  = { module = "androidx.exifinterface:exi
 
 # Coil – loads capture photos from app storage into Compose (no network module)
 coil-compose                            = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+# Glance – the home-screen widget, written like Compose (SPEC §2.11)
+androidx-glance-appwidget               = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 
 # Coroutines
 kotlinx-coroutines-core                 = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core",    version.ref = "coroutines" }

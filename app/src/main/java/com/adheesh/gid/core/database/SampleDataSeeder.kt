@@ -61,6 +61,21 @@ class SampleDataSeeder(private val db: GIDDatabase) {
         }
         db.timetableDao().upsertAll(ttEntries)
 
+        // ── Exams: one next week, an assignment due tomorrow ──────────────────
+        db.examDao().upsertAll(
+            listOf(
+                ExamEntity(
+                    id = uuid(), subjectId = subjectRows[0].id, title = "Mid-sem", kind = ExamKind.EXAM.name,
+                    dateEpochDay = today.plusDays(7).toEpochDay(), timeMinutes = 10 * 60, room = "Room 100",
+                    createdAt = now, updatedAt = now,
+                ),
+                ExamEntity(
+                    id = uuid(), subjectId = subjectRows[1].id, title = "Lab record", kind = ExamKind.ASSIGNMENT.name,
+                    dateEpochDay = today.plusDays(1).toEpochDay(), createdAt = now, updatedAt = now,
+                ),
+            )
+        )
+
         // ── 3. Holidays ───────────────────────────────────────────────────────
         db.holidayDao().upsertAll(listOf(
             holiday(monday.plusDays(5), "Weekend", now),   // Saturday of this week
@@ -153,6 +168,7 @@ class SampleDataSeeder(private val db: GIDDatabase) {
         db.holidayDao().deleteAll()
         db.alarmDao().deleteAll()
         db.activitySessionDao().deleteAll()
+        db.examDao().deleteAll()
         db.captureDao().deleteAll()
         db.headingDao().deleteAll()
         db.subjectDao().deleteAll()

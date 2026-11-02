@@ -44,6 +44,7 @@ import com.adheesh.gid.core.designsystem.GIDMutedText
 import com.adheesh.gid.core.designsystem.GIDText
 import com.adheesh.gid.core.designsystem.SectionTitle
 import com.adheesh.gid.core.scheduling.ExactAlarms
+import com.adheesh.gid.feature.capture.ui.CaptureTileService
 
 /** Live permission state; re-read every time the screen resumes. */
 data class ReliabilityStatus(
@@ -106,6 +107,16 @@ fun ReliabilitySection(modifier: Modifier = Modifier) {
             ok      = status.battery,
             onFix   = { context.startSafely(batterySettings(context)) },
         )
+        // Quick capture from the pull-down shade (SPEC §2.11).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            var tileAdded by remember { mutableStateOf(false) }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Text(stringResource(R.string.tile_add_text), style = MaterialTheme.typography.bodyMedium, color = GIDText, modifier = Modifier.weight(1f))
+                TextButton(enabled = !tileAdded, onClick = { CaptureTileService.requestAdd(context) { tileAdded = it } }) {
+                    Text(stringResource(if (tileAdded) R.string.tile_added else R.string.tile_add), color = GIDCyan)
+                }
+            }
+        }
         Spacer(Modifier.size(8.dp))
         Text(stringResource(R.string.reliability_oem_note), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
         TextButton(onClick = { context.startSafely(appDetails(context)) }) {

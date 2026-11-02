@@ -56,6 +56,13 @@ interface CaptureDao {
     @Query("UPDATE captures SET headingId = NULL, updatedAt = :now WHERE headingId = :headingId")
     suspend fun clearHeading(headingId: String, now: Long)
 
+    /** A deleted subject's items go back to the Inbox instead of being lost. */
+    @Query("UPDATE captures SET status = 'INBOX', subjectId = NULL, headingId = NULL, updatedAt = :now WHERE subjectId = :subjectId")
+    suspend fun returnToInbox(subjectId: String, now: Long)
+
+    @Query("UPDATE captures SET suggestedSubjectId = NULL WHERE suggestedSubjectId = :subjectId")
+    suspend fun clearSuggestion(subjectId: String)
+
     @Query("DELETE FROM captures WHERE id = :id")
     suspend fun deleteById(id: String)
 

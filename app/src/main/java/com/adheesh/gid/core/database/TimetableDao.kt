@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TimetableDao {
 
+    @Query("UPDATE timetable_entries SET subjectId = NULL WHERE subjectId = :subjectId")
+    suspend fun unlinkSubject(subjectId: String)
+
     @Query("SELECT * FROM timetable_entries ORDER BY dayOfWeek ASC, startMinutes ASC")
     fun observeAll(): Flow<List<TimetableEntryEntity>>
 

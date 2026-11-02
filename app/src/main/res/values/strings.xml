@@ -43,6 +43,13 @@
     </plurals>
     <string name="library_no_results">Nothing matches \"%1$s\".</string>
     <string name="library_sort_selected">Sort %1$d</string>
+    <string name="library_delete_selected">Delete %1$d</string>
+    <string name="library_archived">Archived (%1$d)</string>
+    <plurals name="capture_delete_many_title">
+        <item quantity="one">Delete this capture?</item>
+        <item quantity="other">Delete %1$d captures?</item>
+    </plurals>
+    <string name="capture_delete_many_body">This can\'t be undone. Saved photos and PDFs are deleted too.</string>
     <string name="library_suggested">Suggested: %1$s</string>
     <plurals name="library_unsorted_chip">
         <item quantity="one">1 to sort</item>
@@ -93,6 +100,9 @@
     <string name="subject_rename">Rename subject</string>
     <string name="subject_color">Color</string>
     <string name="subject_archive">Archive subject</string>
+    <string name="subject_restore">Restore</string>
+    <string name="subject_delete">Delete subject</string>
+    <string name="subject_delete_body">\"%1$s\" and its headings are deleted. Everything sorted into it goes back to the Inbox, so nothing is lost.</string>
     <string name="subject_archive_body">It disappears from Library and sorting. Its items stay, and using its name again brings it back.</string>
     <string name="heading_rename">Rename heading</string>
     <string name="heading_delete_title">Delete heading?</string>
@@ -100,6 +110,7 @@
     <string name="cd_move_up">Move up</string>
     <string name="cd_move_down">Move down</string>
     <string name="cd_more">More options</string>
+    <string name="cd_delete_capture">Delete capture</string>
 
     <string name="capture_open_link">Open link</string>
     <string name="capture_open_pdf">Open PDF</string>

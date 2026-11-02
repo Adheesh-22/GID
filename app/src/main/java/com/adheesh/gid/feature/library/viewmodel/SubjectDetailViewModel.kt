@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** One heading and the items filed under it; heading = null is "Unfiled". */
 data class HeadingSection(val heading: HeadingEntity?, val items: List<CaptureEntity>)
@@ -43,6 +45,8 @@ class SubjectDetailViewModel(
     fun rename(name: String)            = launch { subjects.rename(subjectId, name) }
     fun setColor(hex: String?)          = launch { subjects.setColor(subjectId, hex) }
     fun archive()                       = launch { subjects.setArchived(subjectId, true) }
+    // The screen closes right away, so finish even if this ViewModel is cleared.
+    fun delete()                        = launch { withContext(NonCancellable) { subjects.delete(subjectId) } }
     fun addHeading(name: String)        = launch { subjects.addHeading(subjectId, name) }
     fun renameHeading(h: HeadingEntity, name: String) = launch { subjects.renameHeading(h, name) }
     fun moveHeading(h: HeadingEntity, up: Boolean)    = launch { subjects.moveHeading(h, up) }

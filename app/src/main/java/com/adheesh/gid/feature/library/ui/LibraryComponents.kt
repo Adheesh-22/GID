@@ -22,12 +22,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -142,6 +144,7 @@ fun CaptureRow(
     onClick     : () -> Unit,
     modifier    : Modifier = Modifier,
     onLongClick : (() -> Unit)? = null,
+    onDelete    : (() -> Unit)? = null,
 ) {
     val type = CaptureType.ofOrNull(capture.type)
     val subject = (capture.subjectId ?: capture.suggestedSubjectId)?.let { subjectById[it] }
@@ -177,6 +180,11 @@ fun CaptureRow(
                         dot       = if (isSuggestion) subject.color() else null,
                     )
                 }
+            }
+        }
+        if (onDelete != null) {
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Rounded.DeleteOutline, stringResource(R.string.cd_delete_capture), tint = GIDMutedText)
             }
         }
     }

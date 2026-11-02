@@ -15,6 +15,7 @@ interface SubjectRepository {
     /** Archived ones too: old captures still need their subject's name. */
     fun observeAll(): Flow<List<SubjectEntity>>
     fun observeActiveWithCounts(): Flow<List<SubjectWithCount>>
+    fun observeArchived(): Flow<List<SubjectEntity>>
     fun observe(id: String): Flow<SubjectEntity?>
     suspend fun get(id: String): SubjectEntity?
 
@@ -23,6 +24,8 @@ interface SubjectRepository {
     suspend fun rename(id: String, name: String)
     suspend fun setColor(id: String, colorHex: String?)
     suspend fun setArchived(id: String, archived: Boolean)
+    /** Deletes the subject and its headings; its items go back to the Inbox. */
+    suspend fun delete(id: String)
 
     fun observeHeadings(subjectId: String): Flow<List<HeadingEntity>>
     suspend fun addHeading(subjectId: String, name: String): HeadingEntity
@@ -40,6 +43,7 @@ class SubjectRepositoryImpl(private val db: GIDDatabase) : SubjectRepository {
     override fun observeActive()           = subjects.observeActive()
     override fun observeAll()              = subjects.observeAll()
     override fun observeActiveWithCounts() = subjects.observeActiveWithCounts()
+    override fun observeArchived()         = subjects.observeArchived()
     override fun observe(id: String)       = subjects.observe(id)
     override suspend fun get(id: String)   = subjects.get(id)
 
@@ -73,6 +77,16 @@ class SubjectRepositoryImpl(private val db: GIDDatabase) : SubjectRepository {
     override suspend fun setArchived(id: String, archived: Boolean) {
         val subject = subjects.get(id) ?: return
         subjects.upsert(subject.copy(archived = archived, updatedAt = nowMillis()))
+    }
+
+    override suspend fun delete(id: String) = db.withTransaction {
+        val captures = db.captureDao()
+        captures.returnToInbox(id, nowMillis())
+        captures.clearSuggestion(id)
+        // Classes keep their name; saving one again re-creates the subject.
+        db.timetableDao().unlinkSubject(id)
+        headings.deleteForSubject(id)
+        subjects.deleteById(id)
     }
 
     override fun observeHeadings(subjectId: String) = headings.observeForSubject(subjectId)

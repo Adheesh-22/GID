@@ -3,4 +3,6 @@
     <!-- Notification accent = Cyan from SPEC §5 (XML needs its own copy of the token). -->
     <color name="notification_accent">#FF7FE3E6</color>
     <color name="gid_background">#FF161618</color>
+    <!-- Launcher icon backdrop: the logo sits on black. -->
+    <color name="ic_launcher_background">#FF000000</color>
 </resources>

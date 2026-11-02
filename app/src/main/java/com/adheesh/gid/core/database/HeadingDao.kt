@@ -21,6 +21,9 @@ interface HeadingDao {
     @Query("DELETE FROM headings WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    @Query("DELETE FROM headings WHERE subjectId = :subjectId")
+    suspend fun deleteForSubject(subjectId: String)
+
     @Query("DELETE FROM headings")
     suspend fun deleteAll()
 }

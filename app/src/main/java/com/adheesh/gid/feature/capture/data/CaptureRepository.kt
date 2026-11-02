@@ -94,10 +94,13 @@ class CaptureRepositoryImpl(
         val id = newId()
         val stored = files.copyIn(uri, id, mimeType) ?: return null
         val now = nowMillis()
+        val isPdf = stored.mimeType == "application/pdf"
         return save(
             newCapture(
                 id         = id,
-                kind       = if (stored.mimeType == "application/pdf") CaptureKind.PDF else CaptureKind.PHOTO,
+                kind       = if (isPdf) CaptureKind.PDF else CaptureKind.PHOTO,
+                // A PDF's file name is usually its best title; a photo's (IMG_2041) isn't.
+                title      = if (isPdf) stored.displayName?.substringBeforeLast('.').orEmpty() else "",
                 capturedAt = CaptureTimeResolver.resolve(stored.exifMillis, stored.mediaStoreMillis, now),
                 filePath   = stored.path,
                 mimeType   = stored.mimeType,

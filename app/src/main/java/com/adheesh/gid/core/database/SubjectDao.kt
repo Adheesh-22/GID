@@ -24,6 +24,9 @@ interface SubjectDao {
     )
     fun observeActiveWithCounts(): Flow<List<SubjectWithCount>>
 
+    @Query("SELECT * FROM subjects WHERE archived = 1 ORDER BY name COLLATE NOCASE ASC")
+    fun observeArchived(): Flow<List<SubjectEntity>>
+
     @Query("SELECT * FROM subjects")
     fun observeAll(): Flow<List<SubjectEntity>>
 
@@ -44,6 +47,9 @@ interface SubjectDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(subjects: List<SubjectEntity>)
+
+    @Query("DELETE FROM subjects WHERE id = :id")
+    suspend fun deleteById(id: String)
 
     @Query("DELETE FROM subjects")
     suspend fun deleteAll()

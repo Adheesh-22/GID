@@ -75,6 +75,7 @@ fun SubjectDetailScreen(
     var renameOpen     by rememberSaveable { mutableStateOf(false) }
     var colorOpen      by rememberSaveable { mutableStateOf(false) }
     var archiveOpen    by rememberSaveable { mutableStateOf(false) }
+    var deleteOpen     by rememberSaveable { mutableStateOf(false) }
     var addHeadingOpen by rememberSaveable { mutableStateOf(false) }
     var renamingHeadingId by rememberSaveable { mutableStateOf<String?>(null) }
     var deletingHeadingId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -105,6 +106,7 @@ fun SubjectDetailScreen(
                         DropdownMenuItem(text = { Text(stringResource(R.string.subject_rename), color = GIDText) }, onClick = { menuOpen = false; renameOpen = true })
                         DropdownMenuItem(text = { Text(stringResource(R.string.subject_color), color = GIDText) }, onClick = { menuOpen = false; colorOpen = true })
                         DropdownMenuItem(text = { Text(stringResource(R.string.subject_archive), color = GIDCoral) }, onClick = { menuOpen = false; archiveOpen = true })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.subject_delete), color = GIDCoral) }, onClick = { menuOpen = false; deleteOpen = true })
                     }
                 }
             }
@@ -153,6 +155,15 @@ fun SubjectDetailScreen(
         NameDialog(stringResource(R.string.heading_rename), initial = h.name, onDismiss = { renamingHeadingId = null }) { viewModel.renameHeading(h, it) }
     }
     if (colorOpen) ColorDialog(current, onDismiss = { colorOpen = false }) { viewModel.setColor(it); colorOpen = false }
+    if (deleteOpen) {
+        ConfirmDialog(
+            title     = stringResource(R.string.subject_delete),
+            body      = stringResource(R.string.subject_delete_body, current.name),
+            confirm   = stringResource(R.string.action_delete),
+            onDismiss = { deleteOpen = false },
+            onConfirm = { viewModel.delete(); deleteOpen = false; onBack() },
+        )
+    }
     if (archiveOpen) {
         ConfirmDialog(
             title     = stringResource(R.string.subject_archive),

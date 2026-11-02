@@ -87,10 +87,14 @@ ignored), creating the subject if needed.
 subject and heading names.
 - Inbox section: count of unsorted captures, then one card per capture
 (newest first): thumbnail or link/text preview, capture time, and the
-suggested subject as a chip. Tap -> Sort sheet. Long-press starts multi-select;
-'Sort N' opens the Sort sheet for all selected.
-- Subjects section: one row per non-archived subject with its item count.
-Tap -> SubjectDetail.
+suggested subject as a chip, and a delete button (with confirm). A PDF's
+title is its file name. Tap -> Sort sheet. Long-press starts multi-select;
+'Sort N' opens the Sort sheet for all selected, 'Delete N' deletes them.
+- Subjects section: '+ New subject', then one row per non-archived subject
+with its item count and a menu (Archive, Delete). Tap -> SubjectDetail.
+'Archived (N)' shows archived subjects with Restore and Delete.
+- Deleting a subject deletes its headings; its captures go back to the Inbox
+and classes using it are unlinked (saving the class again re-creates it).
 - '+' (also on Home) opens Capture: Camera, Photo from gallery, Paste
 link or text.
 - Sort sheet: type chips (Exam question, Resource, Note, Deadline, Idea,
@@ -98,7 +102,7 @@ Notice), subject chips (suggested one preselected), heading chips of that
 subject plus 'New heading', optional title and note. Deadline adds a date and
 'Also create a task'. 'Save' marks the capture SORTED.
 - SubjectDetail: subject name and color; headings as sections in order, then
-'Unfiled'. Rename/recolor/archive the subject; add, rename, reorder and
+'Unfiled'. Rename/recolor/archive/delete the subject; add, rename, reorder and
 delete headings (items in a deleted heading become Unfiled).
 - CaptureDetail: the full photo, the PDF (opens in another app), or the
 link (opens the browser and records openedAt) and the text; type, subject,

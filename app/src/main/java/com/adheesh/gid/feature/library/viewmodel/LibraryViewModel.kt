@@ -68,6 +68,9 @@ class LibraryViewModel(
     val subjectList: StateFlow<List<SubjectWithCount>> = subjects.observeActiveWithCounts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val archivedSubjects: StateFlow<List<SubjectEntity>> = subjects.observeArchived()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
@@ -87,4 +90,13 @@ class LibraryViewModel(
     }
 
     fun clearSelection() { _selection.value = emptySet() }
+
+    fun deleteCaptures(ids: Collection<String>) = viewModelScope.launch {
+        ids.forEach { captures.delete(it) }
+        _selection.value = _selection.value - ids.toSet()
+    }
+
+    fun setArchived(subjectId: String, archived: Boolean) = viewModelScope.launch { subjects.setArchived(subjectId, archived) }
+
+    fun deleteSubject(subjectId: String) = viewModelScope.launch { subjects.delete(subjectId) }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
@@ -19,6 +20,8 @@ data class StoredFile(
     val mimeType         : String,
     val exifMillis       : Long?,
     val mediaStoreMillis : Long?,
+    /** The file's name in the app it came from, e.g. "Unit 3 notes.pdf". */
+    val displayName      : String?,
 )
 
 // ── Capture files: stored on the device only (SPEC §2.8, RULES §6) ───────────
@@ -46,6 +49,7 @@ class CaptureFileStore(private val context: Context) {
             mimeType         = mime,
             exifMillis       = if (mime.startsWith("image/")) exifTime(target) else null,
             mediaStoreMillis = dateTaken(uri),
+            displayName      = displayName(uri),
         )
     }
 
@@ -80,6 +84,12 @@ class CaptureFileStore(private val context: Context) {
             }
         }.getOrNull()
     }
+
+    private fun displayName(uri: Uri): String? = runCatching {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst() && !c.isNull(0)) c.getString(0) else null
+        }
+    }.getOrNull()?.takeIf { it.isNotBlank() }
 
     private fun extensionFor(mime: String): String =
         MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) ?: if (mime.startsWith("image/")) "jpg" else "bin"

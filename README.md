@@ -15,8 +15,9 @@ The full product spec is in [docs/SPEC.md](docs/SPEC.md) and the coding rules ar
 | **Auth** | Sign in or sign up with email and password, or with Google. Forgot-password emails a reset link. |
 | **Home** | A greeting and your photo, a two-week calendar strip, your next alarm, upcoming classes, and today's tasks (tick them off or add new ones). |
 | **Calendar** | A month grid with task dots and holidays (long-press a date to mark one). Add, edit, delete, track percent done, change priority and move tasks to tomorrow. |
+| **Library** | The Capture Inbox. Share photos, links, text or PDFs to GID from any app (or tap +). GID suggests the subject from your timetable; you sort each item into a subject, heading and type. Search, subject pages, and a deadline can become a task. All on the phone. |
 | **History** | Week by week: productivity bars, sleep bars and a weekly score with the change from last week. Tap a bar to see that day's details. |
-| **Settings** | Profile (photo stays on the phone), evening check-in time, sign out, and the **Reliability** checklist. |
+| **Settings** | Profile (photo stays on the phone), evening check-in time, sign out, **Backup** export/import (one .zip you keep), and the **Reliability** checklist. |
 | **Alarm popup** | Alarms with repeat days and an activity type, a "Start sleep now" option, timers, and the activity-types manager. |
 | **Timetable popup** | Your weekly classes, with reminders N minutes before each one (skipped on holidays). |
 
@@ -63,7 +64,13 @@ RELEASE_STORE_FILE=C\:/Users/<you>/.android/gid-release.jks
 RELEASE_STORE_PASSWORD=...
 RELEASE_KEY_ALIAS=gid
 RELEASE_KEY_PASSWORD=...
+
+# Optional: build output outside the project folder. Use this when the project
+# sits in OneDrive (or another synced folder) and Gradle can't clean app/build.
+BUILD_DIR=C\:/Users/<you>/gid-build
 ```
+
+With `BUILD_DIR` set, APKs land in `<BUILD_DIR>/app/outputs/apk/...` instead of `app/build/outputs/apk/...`.
 
 The build reads these through `BuildConfig`. Without Supabase keys the app still opens,
 but sign-in says it isn't set up.

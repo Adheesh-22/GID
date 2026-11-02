@@ -17,8 +17,15 @@ import com.adheesh.gid.feature.alarm.data.AlarmRepositoryImpl
 import com.adheesh.gid.feature.auth.data.AuthRepository
 import com.adheesh.gid.feature.auth.data.SupabaseAuthRepository
 import com.adheesh.gid.feature.calendar.data.HolidayRepositoryImpl
+import com.adheesh.gid.feature.capture.data.CaptureActions
+import com.adheesh.gid.feature.capture.data.CaptureFileStore
+import com.adheesh.gid.feature.capture.data.CaptureRepository
+import com.adheesh.gid.feature.capture.data.CaptureRepositoryImpl
+import com.adheesh.gid.feature.subjects.data.SubjectRepository
+import com.adheesh.gid.feature.subjects.data.SubjectRepositoryImpl
 import com.adheesh.gid.feature.sessions.data.SessionManager
 import com.adheesh.gid.feature.sessions.data.SessionRepositoryImpl
+import com.adheesh.gid.feature.settings.data.BackupManager
 import com.adheesh.gid.feature.settings.data.ProfilePhotoStore
 import com.adheesh.gid.feature.settings.data.ProfileRepository
 import com.adheesh.gid.feature.settings.data.ProfileRepositoryImpl
@@ -74,7 +81,12 @@ class AppContainer(private val context: Context) {
 
     // ── Repositories ─────────────────────────────────────────────────────────
     val taskRepository         = TaskRepositoryImpl(database.taskDao())
-    val timetableRepository    = TimetableRepositoryImpl(database.timetableDao())
+    val subjectRepository: SubjectRepository = SubjectRepositoryImpl(database)
+    val timetableRepository    = TimetableRepositoryImpl(database.timetableDao(), subjectRepository)
+    val captureFiles           = CaptureFileStore(context)
+    val captureRepository: CaptureRepository = CaptureRepositoryImpl(database, captureFiles)
+    val captureActions         = CaptureActions(captureRepository, captureFiles, appScope)
+    val backupManager          = BackupManager(context, database, preferences, captureFiles)
     val holidayRepository      = HolidayRepositoryImpl(database.holidayDao())
     val activityTypeRepository = ActivityTypeRepositoryImpl(database.activityTypeDao())
     val alarmRepository        = AlarmRepositoryImpl(database.alarmDao())
@@ -100,6 +112,9 @@ class AppContainer(private val context: Context) {
 
     // ── Debug seeding ────────────────────────────────────────────────────────
     val seeder = SampleDataSeeder(database)
+
+    /** Set by the share dialog or evening notification: open Library (and maybe sort these). */
+    val libraryRequest = MutableStateFlow<LibraryRequest?>(null)
 
     /** Date tapped on Home's calendar strip; the Calendar tab opens on it. */
     val calendarSelection = MutableStateFlow<LocalDate?>(null)

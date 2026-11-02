@@ -24,6 +24,7 @@ android {
         targetSdk     = 36
         versionCode   = 1
         versionName   = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Inject Supabase keys from local.properties into BuildConfig.
         // NEVER put actual values here – they are read at build time only.
@@ -129,6 +130,10 @@ dependencies {
     // WorkManager – daily re-plan of reminders and the 16-hour session check
     implementation(libs.androidx.work.runtime.ktx)
 
+    // Library: photo dates and thumbnails
+    implementation(libs.androidx.exifinterface)
+    implementation(libs.coil.compose)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
 
@@ -157,4 +162,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    // MigrationTestHelper: checks database upgrades against app/schemas
+    androidTestImplementation(libs.androidx.room.testing)
 }

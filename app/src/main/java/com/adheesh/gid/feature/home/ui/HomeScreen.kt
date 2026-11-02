@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CollectionsBookmark
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,7 +64,9 @@ import com.adheesh.gid.core.designsystem.ProfileAvatar
 import com.adheesh.gid.core.util.formatMinutesOfDay
 import com.adheesh.gid.core.util.formatShort
 import com.adheesh.gid.core.util.today
+import com.adheesh.gid.feature.capture.data.CaptureActions
 import com.adheesh.gid.feature.home.viewmodel.HomeViewModel
+import com.adheesh.gid.feature.library.ui.CaptureButton
 import com.adheesh.gid.feature.tasks.ui.DeleteTaskDialog
 import com.adheesh.gid.feature.tasks.ui.PriorityEditor
 import com.adheesh.gid.feature.tasks.ui.TaskDetailPanel
@@ -82,6 +86,9 @@ fun HomeScreen(
     onOpenCalendar   : (LocalDate) -> Unit,
     onOpenAlarms     : () -> Unit,
     onOpenTimetable  : () -> Unit,
+    unsortedCount    : Int,
+    onOpenLibrary    : () -> Unit,
+    captureActions   : CaptureActions,
     modifier         : Modifier = Modifier,
 ) {
     val name       by viewModel.name.collectAsState()
@@ -163,6 +170,29 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        // ── Inbox: unsorted count and quick capture (SPEC §2.8) ──────────────
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(CircleShape)
+                .background(GIDSurface)
+                .clickable(onClick = onOpenLibrary)
+                .padding(start = 20.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+        ) {
+            Icon(Icons.Rounded.CollectionsBookmark, contentDescription = null, tint = GIDCyan)
+            Spacer(Modifier.size(12.dp))
+            Text(stringResource(R.string.library_inbox), style = MaterialTheme.typography.titleMedium, color = GIDText)
+            Spacer(Modifier.size(8.dp))
+            Text(
+                if (unsortedCount > 0) pluralStringResource(R.plurals.library_unsorted_chip, unsortedCount, unsortedCount) else stringResource(R.string.action_done),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (unsortedCount > 0) GIDCoral else GIDMutedText,
+                modifier = Modifier.weight(1f),
+            )
+            CaptureButton(captureActions, onSaved = {}, modifier = Modifier.size(44.dp))
         }
 
         // ── Left column + tall Tasks card ────────────────────────────────────

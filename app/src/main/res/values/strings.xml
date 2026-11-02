@@ -27,6 +27,108 @@
     <string name="nav_calendar">Calendar</string>
     <string name="nav_history">History</string>
     <string name="nav_settings">Settings</string>
+    <string name="nav_library">Library</string>
+
+    <!-- Library / Capture Inbox (SPEC §2.8) -->
+    <string name="library_title">Library</string>
+    <string name="library_search">Search notes, links, subjects</string>
+    <string name="library_inbox">Inbox</string>
+    <string name="library_inbox_count">%1$d to sort</string>
+    <string name="library_inbox_empty">Inbox is clear. Share a photo or link to GID, or tap + to capture one.</string>
+    <string name="library_subjects">Subjects</string>
+    <string name="library_subjects_empty">No subjects yet. They appear when you add classes to your timetable or create one while sorting.</string>
+    <plurals name="library_item_count">
+        <item quantity="one">1 item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="library_no_results">Nothing matches \"%1$s\".</string>
+    <string name="library_sort_selected">Sort %1$d</string>
+    <string name="library_suggested">Suggested: %1$s</string>
+    <plurals name="library_unsorted_chip">
+        <item quantity="one">1 to sort</item>
+        <item quantity="other">%1$d to sort</item>
+    </plurals>
+    <string name="cd_capture">Capture something</string>
+    <string name="cd_clear_selection">Clear selection</string>
+    <string name="capture_camera">Camera</string>
+    <string name="capture_photo">Photo or PDF from phone</string>
+    <string name="capture_paste">Paste a link or text</string>
+    <string name="capture_paste_hint">Link or text</string>
+    <string name="capture_saved">Saved to Inbox</string>
+    <string name="capture_saved_suggested">Saved to Inbox · %1$s suggested</string>
+    <string name="capture_failed">Couldn\'t save that. Try sharing it again.</string>
+    <string name="capture_sort_now">Sort now</string>
+    <string name="capture_untitled_photo">Photo</string>
+    <string name="capture_untitled_pdf">PDF</string>
+    <string name="capture_untitled_text">Note</string>
+
+    <string name="type_exam_question">Exam question</string>
+    <string name="type_resource">Resource</string>
+    <string name="type_note">Note</string>
+    <string name="type_deadline">Deadline</string>
+    <string name="type_idea">Idea</string>
+    <string name="type_notice">Notice</string>
+
+    <string name="sort_title">Sort</string>
+    <plurals name="sort_title_many">
+        <item quantity="one">Sort 1 item</item>
+        <item quantity="other">Sort %1$d items</item>
+    </plurals>
+    <string name="sort_type">Type</string>
+    <string name="sort_subject">Subject</string>
+    <string name="sort_heading">Heading</string>
+    <string name="sort_new_subject">New subject</string>
+    <string name="sort_new_heading">New heading</string>
+    <string name="sort_no_heading">No heading</string>
+    <string name="sort_title_field">Title (optional)</string>
+    <string name="sort_note_field">Note (optional)</string>
+    <string name="sort_due">Due date</string>
+    <string name="sort_pick_due">Pick a date</string>
+    <string name="sort_create_task">Also create a task</string>
+    <string name="sort_name_field">Name</string>
+    <string name="sort_choose_type">Choose a type to save</string>
+
+    <string name="subject_unfiled">Unfiled</string>
+    <string name="subject_empty">Nothing sorted into this subject yet.</string>
+    <string name="subject_rename">Rename subject</string>
+    <string name="subject_color">Color</string>
+    <string name="subject_archive">Archive subject</string>
+    <string name="subject_archive_body">It disappears from Library and sorting. Its items stay, and using its name again brings it back.</string>
+    <string name="heading_rename">Rename heading</string>
+    <string name="heading_delete_title">Delete heading?</string>
+    <string name="heading_delete_body">Items under it move to Unfiled.</string>
+    <string name="cd_move_up">Move up</string>
+    <string name="cd_move_down">Move down</string>
+    <string name="cd_more">More options</string>
+
+    <string name="capture_open_link">Open link</string>
+    <string name="capture_open_pdf">Open PDF</string>
+    <string name="capture_sort_again">Sort again</string>
+    <string name="capture_delete_title">Delete this capture?</string>
+    <string name="capture_delete_body">This can\'t be undone. The saved photo or PDF is deleted too.</string>
+    <string name="capture_captured_at">Captured %1$s</string>
+    <string name="capture_due">Due %1$s</string>
+    <string name="capture_no_app">No app on this phone can open it.</string>
+    <string name="action_sort_inbox">Sort inbox</string>
+    <string name="share_label">Save to GID</string>
+
+    <!-- Backup (SPEC §2.9) -->
+    <string name="backup_title">Backup</string>
+    <string name="backup_text">Everything in GID lives only on this phone. Export a backup now and then, and keep it on Drive or a laptop.</string>
+    <string name="backup_export">Export</string>
+    <string name="backup_import">Import</string>
+    <string name="backup_exported">Backup saved</string>
+    <string name="backup_export_failed">Couldn\'t save the backup</string>
+    <string name="backup_import_confirm_title">Replace everything?</string>
+    <string name="backup_import_confirm_text">Tasks, timetable, alarms, history and Library on this phone are replaced by the backup. GID restarts when it\'s done.</string>
+    <string name="backup_import_confirm">Replace</string>
+    <string name="backup_import_newer">This backup is from a newer GID. Update the app first.</string>
+    <string name="backup_import_not_backup">That file isn\'t a GID backup.</string>
+    <string name="backup_import_failed">Couldn\'t read that backup</string>
+    <plurals name="notif_evening_inbox">
+        <item quantity="one">You saved 1 thing today that still needs sorting.</item>
+        <item quantity="other">You saved %1$d things that still need sorting.</item>
+    </plurals>
 
     <!-- Content descriptions (screen readers) -->
     <string name="cd_add_task">Add task</string>

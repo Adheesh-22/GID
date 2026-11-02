@@ -2,7 +2,6 @@ package com.adheesh.gid.feature.tasks.domain
 
 import com.adheesh.gid.core.database.TaskEntity
 import com.adheesh.gid.core.database.TaskStatus
-import java.util.UUID
 
 // ── Task rules – SPEC §3 ─────────────────────────────────────────────────────
 // Plain Kotlin so they can be unit tested without Android.
@@ -28,18 +27,14 @@ object TaskRules {
     }
 
     /**
-     * 'Move to tomorrow': a NEW task on the next day pointing back at the
-     * original. The original is left untouched so its day's history stays true.
-     * The copy keeps the percent reached so far, so the user carries on from it.
+     * 'Move to tomorrow': the SAME task moves to the next day, so it leaves
+     * today's list. It keeps its id and the percent reached so far, so the user
+     * carries on from it.
      */
-    fun carryToTomorrow(task: TaskEntity, now: Long, newId: String = UUID.randomUUID().toString()): TaskEntity =
+    fun moveToTomorrow(task: TaskEntity, now: Long): TaskEntity =
         task.copy(
-            id            = newId,
-            dateEpochDay  = task.dateEpochDay + 1,
-            carriedFromId = task.id,
-            completedAt   = null,
-            createdAt     = now,
-            updatedAt     = now,
+            dateEpochDay = task.dateEpochDay + 1,
+            updatedAt    = now,
         )
 
     /** Overdue = date before today and under 100%. */

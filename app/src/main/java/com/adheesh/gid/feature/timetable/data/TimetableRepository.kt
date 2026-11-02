@@ -2,6 +2,7 @@ package com.adheesh.gid.feature.timetable.data
 
 import com.adheesh.gid.core.database.TimetableDao
 import com.adheesh.gid.core.database.TimetableEntryEntity
+import com.adheesh.gid.feature.subjects.data.SubjectRepository
 import kotlinx.coroutines.flow.Flow
 
 interface TimetableRepository {
@@ -14,12 +15,22 @@ interface TimetableRepository {
     suspend fun deleteAll()
 }
 
-class TimetableRepositoryImpl(private val dao: TimetableDao) : TimetableRepository {
+// Saving a class links it to the Subject of the same name (SPEC §2.7), so
+// captures taken during that class can be suggested into it.
+class TimetableRepositoryImpl(
+    private val dao      : TimetableDao,
+    private val subjects : SubjectRepository,
+) : TimetableRepository {
     override fun observeAll()                                = dao.observeAll()
     override fun observeForDay(dayOfWeek: Int)               = dao.observeForDay(dayOfWeek)
     override suspend fun getAllEnabled()                     = dao.getAllEnabled()
-    override suspend fun save(entry: TimetableEntryEntity)   = dao.upsert(entry)
-    override suspend fun saveAll(entries: List<TimetableEntryEntity>) = dao.upsertAll(entries)
+    override suspend fun save(entry: TimetableEntryEntity)   = dao.upsert(linked(entry))
+    override suspend fun saveAll(entries: List<TimetableEntryEntity>) = dao.upsertAll(entries.map { linked(it) })
+
+    private suspend fun linked(entry: TimetableEntryEntity): TimetableEntryEntity =
+        if (entry.subject.isBlank()) entry.copy(subjectId = null)
+        else entry.copy(subjectId = subjects.ensure(entry.subject).id)
+
     override suspend fun delete(id: String)                  = dao.deleteById(id)
     override suspend fun deleteAll()                         = dao.deleteAll()
 }

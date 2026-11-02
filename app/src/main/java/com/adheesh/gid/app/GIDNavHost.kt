@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.CollectionsBookmark
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
@@ -65,6 +66,12 @@ import com.adheesh.gid.feature.history.ui.HistoryScreen
 import com.adheesh.gid.feature.history.viewmodel.HistoryViewModel
 import com.adheesh.gid.feature.home.ui.HomeScreen
 import com.adheesh.gid.feature.home.viewmodel.HomeViewModel
+import com.adheesh.gid.feature.library.ui.CaptureDetailScreen
+import com.adheesh.gid.feature.library.ui.LibraryScreen
+import com.adheesh.gid.feature.library.ui.SubjectDetailScreen
+import com.adheesh.gid.feature.library.viewmodel.CaptureDetailViewModel
+import com.adheesh.gid.feature.library.viewmodel.LibraryViewModel
+import com.adheesh.gid.feature.library.viewmodel.SubjectDetailViewModel
 import com.adheesh.gid.feature.settings.ui.SettingsScreen
 import com.adheesh.gid.feature.settings.viewmodel.SettingsViewModel
 import com.adheesh.gid.feature.tasks.data.TaskActions
@@ -76,7 +83,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-private val tabDestinations = setOf<NavKey>(Home, Calendar, History, Settings)
+private val tabDestinations = setOf<NavKey>(Home, Calendar, Library, History, Settings)
 
 /** Wraps the cached account so "not loaded yet" differs from "signed out". */
 private data class AccountState(val user: SignedInUser?)
@@ -122,6 +129,12 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
         resolved.user?.let { scope.launch { container.profileRepository.syncPending(it.email) } }
     }
 
+    // Share dialog 'Sort now' and the evening notification's 'Sort inbox'.
+    val libraryRequest by container.libraryRequest.collectAsState()
+    LaunchedEffect(libraryRequest, resolved.user?.id) {
+        if (libraryRequest != null && resolved.user != null) backStack.switchTab(Library)
+    }
+
     val current by remember { derivedStateOf { backStack.lastOrNull() } }
     val showBottomBar = current in tabDestinations
     val incomplete by container.profileRepository.observeIncomplete().collectAsState(initial = false)
@@ -130,6 +143,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
     val tabs = listOf(
         BottomNavItem(Home,     Icons.Rounded.Home,          stringResource(R.string.nav_home)),
         BottomNavItem(Calendar, Icons.Rounded.CalendarMonth, stringResource(R.string.nav_calendar)),
+        BottomNavItem(Library,  Icons.Rounded.CollectionsBookmark, stringResource(R.string.nav_library)),
         BottomNavItem(History,  Icons.Rounded.BarChart,      stringResource(R.string.nav_history)),
         // The dot stays while name or DOB is missing (SPEC §1).
         BottomNavItem(Settings, Icons.Rounded.Settings,      stringResource(R.string.nav_settings), showBadge = incomplete),
@@ -184,6 +198,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                             actions   = taskActions,
                         )
                     }
+                    val unsorted by container.captureRepository.observeInboxCount().collectAsState(initial = 0)
                     var alarmsOpen    by rememberSaveable { mutableStateOf(false) }
                     var timetableOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -196,6 +211,9 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                         },
                         onOpenAlarms    = { alarmsOpen = true },
                         onOpenTimetable = { timetableOpen = true },
+                        unsortedCount   = unsorted,
+                        onOpenLibrary   = { backStack.switchTab(Library) },
+                        captureActions  = container.captureActions,
                     )
                     NotificationPermissionPrompt(container.preferences)
 
@@ -235,6 +253,36 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                     )
                 }
 
+                entry<Library> {
+                    val vm = viewModel { LibraryViewModel(container.captureRepository, container.subjectRepository) }
+                    LibraryScreen(
+                        viewModel      = vm,
+                        captureActions = container.captureActions,
+                        onOpenSubject  = { backStack.add(SubjectDetail(it)) },
+                        onOpenCapture  = { backStack.add(CaptureDetail(it)) },
+                        requestedSort  = libraryRequest?.sortCaptureIds.orEmpty(),
+                        onRequestUsed  = { container.libraryRequest.value = null },
+                    )
+                }
+
+                entry<SubjectDetail> { key ->
+                    val vm = viewModel(key = key.subjectId) {
+                        SubjectDetailViewModel(key.subjectId, container.captureRepository, container.subjectRepository)
+                    }
+                    SubjectDetailScreen(
+                        viewModel     = vm,
+                        onBack        = { backStack.removeAt(backStack.lastIndex) },
+                        onOpenCapture = { backStack.add(CaptureDetail(it)) },
+                    )
+                }
+
+                entry<CaptureDetail> { key ->
+                    val vm = viewModel(key = key.captureId) {
+                        CaptureDetailViewModel(key.captureId, container.captureRepository, container.subjectRepository)
+                    }
+                    CaptureDetailScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) })
+                }
+
                 entry<History> {
                     val vm = viewModel {
                         HistoryViewModel(container.taskRepository, container.sessionRepository, container.activityTypeRepository)
@@ -250,6 +298,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                             photos      = container.photoStore,
                             preferences = container.preferences,
                             evening     = container.eveningPromptScheduler,
+                            backup      = container.backupManager,
                         )
                     }
                     SettingsScreen(viewModel = vm, onGoHome = { backStack.switchTab(Home) })

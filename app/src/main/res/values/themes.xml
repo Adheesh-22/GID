@@ -7,4 +7,12 @@
     <style name="Theme.GID" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/gid_background</item>
     </style>
+
+    <!-- Share dialog: the app you shared from stays visible, dimmed, behind the card. -->
+    <style name="Theme.GID.Share" parent="Theme.GID">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+    </style>
 </resources>

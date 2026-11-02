@@ -1,13 +1,16 @@
 package com.adheesh.gid.core.database
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.AutoMigrationSpec
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 // ── GIDDatabase ───────────────────────────────────────────────────────────────
-// Single Room database for the whole app.  Version starts at 1; bump it and add
-// a Migration object whenever you change a schema in future milestones.
+// Single Room database for the whole app.  Bump the version and add a
+// migration whenever a schema changes; users keep their data across updates.
 //
 // Note: no TypeConverters needed – all fields that Room can't handle natively
 // (enums, dates) are stored as primitive types (String / Long / Int).
@@ -20,9 +23,16 @@ import androidx.room.RoomDatabase
         AlarmEntity::class,
         ActivitySessionEntity::class,
         LocalProfileEntity::class,
+        SubjectEntity::class,
+        HeadingEntity::class,
+        CaptureEntity::class,
+        CaptureFts::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,   // saves schema JSON to app/schemas/ for migration diffing
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2, spec = GIDDatabase.SubjectsFromTimetable::class),
+    ],
 )
 abstract class GIDDatabase : RoomDatabase() {
 
@@ -33,9 +43,39 @@ abstract class GIDDatabase : RoomDatabase() {
     abstract fun alarmDao(): AlarmDao
     abstract fun activitySessionDao(): ActivitySessionDao
     abstract fun profileDao(): ProfileDao
+    abstract fun subjectDao(): SubjectDao
+    abstract fun headingDao(): HeadingDao
+    abstract fun captureDao(): CaptureDao
+
+    // ── Migration 1 → 2 ──────────────────────────────────────────────────────
+    // Room diffs schemas/1.json against 2.json and writes the CREATE TABLE and
+    // ALTER TABLE statements itself. Room can't guess data changes, so this hook
+    // turns every distinct class name in the timetable into a Subject and links
+    // the classes to it. SQLite has no UUID function; 32 random hex characters
+    // are just as unique for an id.
+    class SubjectsFromTimetable : AutoMigrationSpec {
+        override fun onPostMigrate(db: SupportSQLiteDatabase) {
+            val now = System.currentTimeMillis()
+            db.execSQL(
+                """
+                INSERT INTO subjects (id, name, nameKey, colorHex, archived, createdAt, updatedAt)
+                SELECT lower(hex(randomblob(16))), trim(MIN(subject)), lower(trim(subject)), NULL, 0, $now, $now
+                FROM timetable_entries
+                WHERE trim(subject) != ''
+                GROUP BY lower(trim(subject))
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                UPDATE timetable_entries
+                SET subjectId = (SELECT id FROM subjects WHERE subjects.nameKey = lower(trim(timetable_entries.subject)))
+                """.trimIndent()
+            )
+        }
+    }
 
     companion object {
-        private const val DATABASE_NAME = "gid_database"
+        const val DATABASE_NAME = "gid_database"
 
         fun create(context: Context, allowDestructiveMigration: Boolean = false): GIDDatabase {
             val builder = Room.databaseBuilder(

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the captures folder is shared, and only with the camera app we hand a
+     Uri to (or a viewer opening a PDF), never the whole files directory. -->
+<paths>
+    <files-path name="captures" path="captures/" />
+</paths>

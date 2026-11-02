@@ -35,12 +35,19 @@ class SampleDataSeeder(private val db: GIDDatabase) {
             Triple("Computer Networks",  9 * 60,  10 * 60 + 30),
             Triple("Software Eng.",      11 * 60, 12 * 60 + 30),
         )
+        // Reuse a subject that already exists so seeding twice doesn't orphan links.
+        val subjectRows = subjects.map { (name, _, _) ->
+            db.subjectDao().getByKey(SubjectEntity.keyOf(name))
+                ?: SubjectEntity(id = uuid(), name = name, nameKey = SubjectEntity.keyOf(name), createdAt = now, updatedAt = now)
+        }
+        db.subjectDao().upsertAll(subjectRows)
         val ttEntries = (1..5).flatMapIndexed { idx, dow ->
             val (subj, start, end) = subjects[idx]
             listOf(
                 TimetableEntryEntity(
                     id             = uuid(),
                     subject        = subj,
+                    subjectId      = subjectRows[idx].id,
                     dayOfWeek      = dow,
                     startMinutes   = start,
                     endMinutes     = end,
@@ -146,6 +153,9 @@ class SampleDataSeeder(private val db: GIDDatabase) {
         db.holidayDao().deleteAll()
         db.alarmDao().deleteAll()
         db.activitySessionDao().deleteAll()
+        db.captureDao().deleteAll()
+        db.headingDao().deleteAll()
+        db.subjectDao().deleteAll()
         // Custom activity types are removed; the defaults are put back because
         // alarms and timers always need them (SPEC §2.6).
         db.activityTypeDao().deleteAll()

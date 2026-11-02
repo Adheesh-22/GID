@@ -25,3 +25,21 @@ enum class ActivityCategory {
 enum class SessionSource { ALARM, TIMER, MANUAL }
 
 enum class SessionStatus { RUNNING, COMPLETED, CANCELLED }
+
+enum class CaptureKind {
+    PHOTO, LINK, TEXT, PDF;
+
+    companion object {
+        fun of(value: String): CaptureKind = entries.firstOrNull { it.name == value } ?: TEXT
+    }
+}
+
+enum class CaptureType {
+    EXAM_QUESTION, RESOURCE, NOTE, DEADLINE, IDEA, NOTICE;
+
+    companion object {
+        fun ofOrNull(value: String?): CaptureType? = entries.firstOrNull { it.name == value }
+    }
+}
+
+enum class CaptureStatus { INBOX, SORTED, ARCHIVED }

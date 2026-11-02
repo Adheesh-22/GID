@@ -71,9 +71,11 @@ class ClassReminderReceiver : BroadcastReceiver() {
 
 class EveningPromptReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        Notifications.showEveningPrompt(context)
-        // Arm tomorrow's prompt.
-        launchAsync { context.container.eveningPromptScheduler.schedule() }
+        launchAsync {
+            Notifications.showEveningPrompt(context, context.container.captureRepository.inboxCount())
+            // Arm tomorrow's prompt.
+            context.container.eveningPromptScheduler.schedule()
+        }
     }
 
     companion object {

@@ -8,6 +8,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.adheesh.gid.app.GIDNavHost
+import com.adheesh.gid.app.LibraryRequest
 import com.adheesh.gid.core.designsystem.GIDTheme
 import com.adheesh.gid.core.notifications.Notifications
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,9 +51,12 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         intent ?: return
         container.authRepository.handleDeepLink(intent)
-        if (intent.getStringExtra(Notifications.EXTRA_OPEN) == Notifications.OPEN_PROGRESS) {
-            openProgress.value = true
-            intent.removeExtra(Notifications.EXTRA_OPEN)   // don't reopen on rotation
+        when (intent.getStringExtra(Notifications.EXTRA_OPEN)) {
+            Notifications.OPEN_PROGRESS -> openProgress.value = true
+            Notifications.OPEN_LIBRARY  -> container.libraryRequest.value =
+                LibraryRequest(intent.getStringArrayExtra(Notifications.EXTRA_CAPTURE_IDS)?.toList().orEmpty())
+            else -> return
         }
+        intent.removeExtra(Notifications.EXTRA_OPEN)   // don't reopen on rotation
     }
 }

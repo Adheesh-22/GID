@@ -7,9 +7,11 @@ device. The cloud only holds the sign-up profile.
 offline).
 - First sign-in or sign-up -> Settings in setup mode if name or DOB is
 missing, else Home. 'Go to home' is always allowed.
-- Bottom bar on Home, Calendar, History and Settings: Home | Calendar |
-History | Settings. The Settings icon shows a dot while name or DOB is
-missing.
+- Bottom bar on Home, Calendar, Library, History and Settings: Home |
+Calendar | Library | History | Settings. The Settings icon shows a dot while
+name or DOB is missing.
+- Library opens full-screen SubjectDetail and CaptureDetail pages (back arrow
+returns to Library).
 - Popups are dialogs over Home, not separate screens: AlarmPopup and
 TimetablePopup. History day details are also a dialog. Each has a back arrow
 top-left that closes it.
@@ -78,6 +80,37 @@ Learning on YouTube (all FOCUS), Class (CLASS), Free time (FREE).
 timetable' switches to edit mode: add/edit/delete classes, reminder minutes
 before (default 10), enable/disable.
 - No reminders on holiday dates.
+- Saving a class links it to a Subject with the same name (case and spaces
+ignored), creating the subject if needed.
+2.8 Library (V1.1: Capture Inbox, on the device only, no AI)
+- Search bar at the top: matches capture titles, notes and links, and
+subject and heading names.
+- Inbox section: count of unsorted captures, then one card per capture
+(newest first): thumbnail or link/text preview, capture time, and the
+suggested subject as a chip. Tap -> Sort sheet. Long-press starts multi-select;
+'Sort N' opens the Sort sheet for all selected.
+- Subjects section: one row per non-archived subject with its item count.
+Tap -> SubjectDetail.
+- '+' (also on Home) opens Capture: Camera, Photo from gallery, Paste
+link or text.
+- Sort sheet: type chips (Exam question, Resource, Note, Deadline, Idea,
+Notice), subject chips (suggested one preselected), heading chips of that
+subject plus 'New heading', optional title and note. Deadline adds a date and
+'Also create a task'. 'Save' marks the capture SORTED.
+- SubjectDetail: subject name and color; headings as sections in order, then
+'Unfiled'. Rename/recolor/archive the subject; add, rename, reorder and
+delete headings (items in a deleted heading become Unfiled).
+- CaptureDetail: the full photo, the PDF (opens in another app), or the
+link (opens the browser and records openedAt) and the text; type, subject,
+heading; 'Sort again', 'Delete' (confirm; also deletes the stored file).
+- Share sheet: GID appears when sharing text, links, images or PDFs from any
+app. The capture is saved straight away and a small dialog says 'Saved to
+Inbox' with the suggested subject, plus 'Sort now' and 'Done'.
+2.9 Backup (in Settings)
+- 'Export backup' writes one .zip (database, captured files, profile photo,
+manifest.json with app and database versions) to a place the user picks.
+- 'Import backup' reads such a .zip, refuses one from a newer database
+version, asks to confirm overwriting everything, then restarts the app.
 3. BEHAVIOUR RULES
 Sessions: one table (ActivitySession) feeds both sleep and focus stats.
 - Timer: start creates a RUNNING session with endsAt; finishing or stopping
@@ -96,9 +129,9 @@ Tasks:
 (set completedAt). Overdue = date before today and under 100.
 - Evening prompt at 21:00 (configurable): a notification opens 'Update
 today's progress' with a slider per task and 'Move unfinished to tomorrow'.
-- 'Move to tomorrow' creates a NEW task on the next day (carriedFromId set)
-and leaves the original on its day with its final percent, so history stays
-true.
+- 'Move to tomorrow' moves the SAME task to the next day: it leaves the
+previous day's list and keeps its percent, so the user carries on from it.
+(carriedFromId is only set on copies made by older versions.)
 Score (plain Kotlin, unit tested):
 - Weights: HIGH 3, MEDIUM 2, LOW 1.
 - DayScore = sum(weight x percent) / sum(weight). No tasks that day = null,
@@ -134,8 +167,22 @@ Room entities (all ids are UUID strings, plus createdAt and updatedAt):
 - Task: title, description, dateEpochDay, timeMinutes?, priority,
 estimatedMinutes?, category?, progressPercent, status, completedAt?,
 carriedFromId?
-- TimetableEntry: subject, dayOfWeek, startMinutes, endMinutes, room?,
-reminderMinutes, enabled
+- TimetableEntry: subject, subjectId?, dayOfWeek, startMinutes, endMinutes,
+room?, reminderMinutes, enabled
+- Subject: name, nameKey (lowercase, trimmed, unique), colorHex?, archived
+- Heading: subjectId, name, sortOrder
+- Capture: kind (PHOTO, LINK, TEXT, PDF), type? (EXAM_QUESTION, RESOURCE,
+NOTE, DEADLINE, IDEA, NOTICE), status (INBOX, SORTED, ARCHIVED), title, note,
+url?, filePath?, mimeType?, capturedAt, subjectId?, suggestedSubjectId?,
+headingId?, dueEpochDay?, linkedTaskId?, openedAt?. Full-text index over
+title, note and url. Files live in the app's private files/captures folder.
+Database version 2: migration 1->2 creates one Subject per distinct timetable
+class name and links the classes to it.
+Capture rules (plain Kotlin, unit tested):
+- capturedAt = the photo's EXIF time, else the gallery's date taken, else
+now; never 0 or in the future.
+- Suggested subject = the enabled class running at capturedAt, from 10
+minutes before it starts to 15 minutes after it ends; none on holidays.
 - Holiday: dateEpochDay, name?
 - ActivityType: name, colorHex, category (SLEEP, NAP, FOCUS, CLASS, FREE,
 OTHER), isDefault
@@ -191,6 +238,7 @@ restrict battery' or autostart turned on.
 Test every alarm with the screen off, on the lock screen, with Do Not Disturb
 on, and after a reboot.
 8. OUT OF SCOPE FOR V1
-Screen-time tracking, AI features, friends and leaderboards, cloud sync of
-productivity data, home-screen widgets, Facebook/Instagram login, recurring
-tasks, iOS.
+Screen-time tracking, AI features (including reading text from photos),
+friends and leaderboards, cloud sync of productivity data or captures, link
+previews, home-screen widgets and Quick Settings tiles (planned for V1.2 with
+exams), Facebook/Instagram login, recurring tasks, iOS.

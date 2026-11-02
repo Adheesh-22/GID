@@ -11,6 +11,8 @@ import com.adheesh.gid.core.scheduling.EveningPromptScheduler
 import com.adheesh.gid.core.util.nowMillis
 import com.adheesh.gid.core.util.today
 import com.adheesh.gid.feature.auth.data.AuthRepository
+import com.adheesh.gid.feature.settings.data.BackupError
+import com.adheesh.gid.feature.settings.data.BackupManager
 import com.adheesh.gid.feature.settings.data.ProfilePhotoStore
 import com.adheesh.gid.feature.settings.data.ProfileRepository
 import com.adheesh.gid.feature.settings.data.SaveOutcome
@@ -46,6 +48,7 @@ class SettingsViewModel(
     private val photos      : ProfilePhotoStore,
     private val preferences : GIDPreferences,
     private val evening     : EveningPromptScheduler,
+    private val backup      : BackupManager,
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(SettingsUiState())
@@ -131,6 +134,37 @@ class SettingsViewModel(
         viewModelScope.launch {
             preferences.setEveningPromptTime(minutes)
             evening.schedule()
+        }
+    }
+
+    // ── Backup (SPEC §2.9) ───────────────────────────────────────────────────
+    private val _backupBusy = MutableStateFlow(false)
+    val backupBusy: StateFlow<Boolean> = _backupBusy.asStateFlow()
+
+    fun exportBackup(target: Uri) {
+        _backupBusy.value = true
+        viewModelScope.launch {
+            val ok = backup.export(target)
+            _backupBusy.value = false
+            _ui.update { it.copy(message = if (ok) R.string.backup_exported else R.string.backup_export_failed) }
+        }
+    }
+
+    /** On success the app restarts with the restored data; otherwise says why it didn't. */
+    fun importBackup(source: Uri) {
+        _backupBusy.value = true
+        viewModelScope.launch {
+            val error = backup.import(source)
+            _backupBusy.value = false
+            _ui.update {
+                it.copy(
+                    message = when (error) {
+                        BackupError.NEWER_VERSION -> R.string.backup_import_newer
+                        BackupError.NOT_A_BACKUP  -> R.string.backup_import_not_backup
+                        else                      -> R.string.backup_import_failed
+                    }
+                )
+            }
         }
     }
 

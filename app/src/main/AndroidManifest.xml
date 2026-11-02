@@ -69,6 +69,49 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
+        <!-- 'Share to GID' from any app: text and links, images, PDFs (SPEC §2.8).
+             Rotation is handled in place so a capture is never saved twice. -->
+        <activity
+            android:name=".feature.capture.ui.ShareReceiverActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:label="@string/share_label"
+            android:theme="@style/Theme.GID.Share"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- Hands the camera app (and PDF viewers) a temporary Uri into files/captures -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <receiver android:name=".core.scheduling.AlarmReceiver" android:exported="false" />
         <receiver android:name=".core.scheduling.TimerReceiver" android:exported="false" />
         <receiver android:name=".core.scheduling.ClassReminderReceiver" android:exported="false" />

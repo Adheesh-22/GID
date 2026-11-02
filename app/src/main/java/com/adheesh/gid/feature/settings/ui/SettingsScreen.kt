@@ -92,7 +92,17 @@ fun SettingsScreen(
     var showDobPicker     by rememberSaveable { mutableStateOf(false) }
     var showEveningPicker by rememberSaveable { mutableStateOf(false) }
     var confirmSignOut    by rememberSaveable { mutableStateOf(false) }
+    var pendingImport     by rememberSaveable { mutableStateOf<String?>(null) }
+    val backupBusy        by viewModel.backupBusy.collectAsState()
     val snackbar = remember { SnackbarHostState() }
+
+    // Backup goes wherever the user picks (Drive, Downloads, a USB stick); GID never uploads it.
+    val exportBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        if (uri != null) viewModel.exportBackup(uri)
+    }
+    val importBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) pendingImport = uri.toString()
+    }
 
     // The system photo picker needs no storage permission.
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -220,6 +230,27 @@ fun SettingsScreen(
                 }
             }
 
+            // ── Backup (SPEC §2.9) ───────────────────────────────────────────
+            GIDCard(Modifier.fillMaxWidth()) {
+                SectionTitle(stringResource(R.string.backup_title))
+                Text(stringResource(R.string.backup_text), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(
+                        onClick  = { exportBackup.launch("gid-backup-${LocalDate.now()}.zip") },
+                        enabled  = !backupBusy,
+                        shape    = MaterialTheme.shapes.large,
+                        modifier = Modifier.weight(1f),
+                    ) { Text(stringResource(R.string.backup_export), color = GIDCyan) }
+                    OutlinedButton(
+                        onClick  = { importBackup.launch(arrayOf("application/zip", "application/octet-stream")) },
+                        enabled  = !backupBusy,
+                        shape    = MaterialTheme.shapes.large,
+                        modifier = Modifier.weight(1f),
+                    ) { Text(stringResource(R.string.backup_import), color = GIDCyan) }
+                }
+            }
+
             ReliabilitySection()
             Spacer(Modifier.height(96.dp))   // room above the floating bottom bar
         }
@@ -240,6 +271,23 @@ fun SettingsScreen(
             initialMinutes = evening,
             onDismiss      = { showEveningPicker = false },
             onPicked       = viewModel::setEveningPrompt,
+        )
+    }
+    pendingImport?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { pendingImport = null },
+            containerColor   = GIDSurface,
+            shape            = MaterialTheme.shapes.medium,
+            title            = { Text(stringResource(R.string.backup_import_confirm_title), color = GIDText) },
+            text             = { Text(stringResource(R.string.backup_import_confirm_text), color = GIDMutedText) },
+            confirmButton    = {
+                TextButton(onClick = { pendingImport = null; viewModel.importBackup(uri.toUri()) }) {
+                    Text(stringResource(R.string.backup_import_confirm), color = Error)
+                }
+            },
+            dismissButton    = {
+                TextButton(onClick = { pendingImport = null }) { Text(stringResource(R.string.action_cancel), color = GIDMutedText) }
+            },
         )
     }
     if (confirmSignOut) {

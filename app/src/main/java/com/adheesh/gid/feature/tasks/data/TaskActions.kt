@@ -70,20 +70,20 @@ class TaskActions(private val tasks: TaskRepository) {
 
     suspend fun delete(taskId: String) = tasks.delete(taskId)
 
-    /** Returns the id of the new copy on the next day. */
+    /** Moves the task itself to the next day; returns its id. */
     suspend fun moveToTomorrow(taskId: String): String? {
         val task = tasks.getTask(taskId) ?: return null
+        // A task copied forward by an older version already has its next-day copy.
         if (tasks.isCarriedForward(task.id)) return null
-        val copy = TaskRules.carryToTomorrow(task, nowMillis())
-        tasks.save(copy)
-        return copy.id
+        tasks.save(TaskRules.moveToTomorrow(task, nowMillis()))
+        return task.id
     }
 
-    /** Evening prompt: carry every unfinished task of [epochDay] to the next day. */
+    /** Evening prompt: move every unfinished task of [epochDay] to the next day. */
     suspend fun moveUnfinishedToTomorrow(epochDay: Long): Int {
         val unfinished = tasks.getTasksForDay(epochDay)
             .filter { it.progressPercent < 100 && !tasks.isCarriedForward(it.id) }
-        unfinished.forEach { tasks.save(TaskRules.carryToTomorrow(it, nowMillis())) }
+        unfinished.forEach { tasks.save(TaskRules.moveToTomorrow(it, nowMillis())) }
         return unfinished.size
     }
 }

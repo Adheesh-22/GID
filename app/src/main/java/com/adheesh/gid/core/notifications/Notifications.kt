@@ -37,6 +37,9 @@ object Notifications {
     /** Extra on MainActivity intents telling it which dialog to open. */
     const val EXTRA_OPEN       = "com.adheesh.gid.OPEN"
     const val OPEN_PROGRESS    = "update_progress"
+    const val OPEN_LIBRARY     = "library"
+    /** With OPEN_LIBRARY: captures to open the Sort sheet for (share dialog's 'Sort now'). */
+    const val EXTRA_CAPTURE_IDS = "com.adheesh.gid.CAPTURE_IDS"
 
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -161,14 +164,21 @@ object Notifications {
     }
 
     // ── Evening prompt (Phase 9) ─────────────────────────────────────────────
-    fun showEveningPrompt(context: Context) {
-        post(
-            context, ID_EVENING,
-            base(context, CHANNEL_EVENING)
-                .setContentTitle(context.getString(R.string.notif_evening_title))
-                .setContentText(context.getString(R.string.notif_evening_text))
-                .setContentIntent(openAppIntent(context, requestCode = ID_EVENING, open = OPEN_PROGRESS))
-                .setAutoCancel(true),
-        )
+    // With unsorted captures waiting, it also asks to clear the Inbox (SPEC §2.8).
+    fun showEveningPrompt(context: Context, unsortedCaptures: Int) {
+        val text = if (unsortedCaptures > 0) {
+            context.getString(R.string.notif_evening_text) + "\n" +
+                context.resources.getQuantityString(R.plurals.notif_evening_inbox, unsortedCaptures, unsortedCaptures)
+        } else context.getString(R.string.notif_evening_text)
+        val builder = base(context, CHANNEL_EVENING)
+            .setContentTitle(context.getString(R.string.notif_evening_title))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(openAppIntent(context, requestCode = ID_EVENING, open = OPEN_PROGRESS))
+            .setAutoCancel(true)
+        if (unsortedCaptures > 0) {
+            builder.addAction(0, context.getString(R.string.action_sort_inbox), openAppIntent(context, requestCode = ID_EVENING + 1, open = OPEN_LIBRARY))
+        }
+        post(context, ID_EVENING, builder)
     }
 }

@@ -1,5 +1,10 @@
 package com.adheesh.gid.feature.exams.viewmodel
 
+import com.adheesh.gid.core.database.SyllabusTopicEntity
+import com.adheesh.gid.feature.syllabus.data.ExamSyllabus
+import com.adheesh.gid.feature.syllabus.data.SyllabusRepository
+import com.adheesh.gid.feature.syllabus.data.UnitWithTopics
+import kotlinx.coroutines.flow.Flow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adheesh.gid.core.database.CaptureEntity
@@ -24,6 +29,7 @@ import kotlinx.coroutines.withContext
 open class ExamEditingViewModel(
     protected val exams    : ExamRepository,
     protected val subjects : SubjectRepository,
+    protected val syllabus : SyllabusRepository,
 ) : ViewModel() {
 
     val activeSubjects: StateFlow<List<SubjectEntity>> = subjects.observeActive()
@@ -36,14 +42,26 @@ open class ExamEditingViewModel(
 
     suspend fun createSubject(name: String): SubjectEntity = subjects.ensure(name)
 
-    fun save(draft: ExamDraft) {
+    /** A subject's units, for the 'Covers' chips in the editor (SPEC §2.13). */
+    fun unitsFor(subjectId: String): Flow<List<UnitWithTopics>> = syllabus.observeUnits(subjectId)
+
+    suspend fun examUnitIds(examId: String): Set<String> = syllabus.getExamUnitIds(examId)
+
+    /** [unitIds]: the units the exam covers; empty = the whole subject. */
+    fun save(draft: ExamDraft, unitIds: Set<String> = emptySet()) {
         // Finishes even if the screen closes straight after.
-        viewModelScope.launch { withContext(NonCancellable) { exams.save(draft) } }
+        viewModelScope.launch {
+            withContext(NonCancellable) {
+                val saved = exams.save(draft)
+                syllabus.setExamUnits(saved.id, unitIds)
+            }
+        }
     }
 }
 
 // ── Exams page (SPEC §2.10) ──────────────────────────────────────────────────
-class ExamsViewModel(exams: ExamRepository, subjects: SubjectRepository) : ExamEditingViewModel(exams, subjects) {
+class ExamsViewModel(exams: ExamRepository, subjects: SubjectRepository, syllabus: SyllabusRepository) :
+    ExamEditingViewModel(exams, subjects, syllabus) {
 
     val upcoming: StateFlow<List<ExamEntity>> = exams.observeUpcoming()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -59,7 +77,8 @@ class ExamDetailViewModel(
     exams              : ExamRepository,
     subjects           : SubjectRepository,
     captures           : CaptureRepository,
-) : ExamEditingViewModel(exams, subjects) {
+    syllabus           : SyllabusRepository,
+) : ExamEditingViewModel(exams, subjects, syllabus) {
 
     val exam: StateFlow<ExamEntity?> = exams.observe(examId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -68,6 +87,15 @@ class ExamDetailViewModel(
     val savedItems: StateFlow<List<CaptureEntity>> = exams.observe(examId)
         .flatMapLatest { e -> e?.let { captures.observeForSubject(it.subjectId) } ?: flowOf(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The topics this exam covers and how many are done (SPEC §2.13). */
+    val examSyllabus: StateFlow<ExamSyllabus> = exams.observe(examId)
+        .flatMapLatest { e -> syllabus.observeExamSyllabus(examId, e?.subjectId) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExamSyllabus(emptyList(), emptySet()))
+
+    fun setTopicDone(topic: SyllabusTopicEntity, done: Boolean) {
+        viewModelScope.launch { syllabus.setDone(topic, done) }
+    }
 
     fun setCompleted(completed: Boolean) {
         viewModelScope.launch { exams.setCompleted(examId, completed) }

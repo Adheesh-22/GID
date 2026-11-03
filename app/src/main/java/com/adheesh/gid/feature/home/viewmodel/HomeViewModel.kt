@@ -13,7 +13,9 @@ import com.adheesh.gid.core.util.weekStart
 import com.adheesh.gid.feature.alarm.data.ActivityTypeRepository
 import com.adheesh.gid.feature.alarm.data.AlarmRepository
 import com.adheesh.gid.feature.alarm.domain.AlarmTimeCalculator
+import com.adheesh.gid.core.database.AttendanceStatus
 import com.adheesh.gid.feature.appearance.data.AppearanceStore
+import com.adheesh.gid.feature.attendance.data.AttendanceRepository
 import com.adheesh.gid.feature.appearance.domain.Appearance
 import com.adheesh.gid.feature.appearance.domain.NameColor
 import com.adheesh.gid.feature.appearance.domain.NameFont
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -44,6 +47,9 @@ import java.time.LocalTime
 import java.time.ZonedDateTime
 
 data class NextAlarm(val triggerAt: ZonedDateTime, val alarm: AlarmEntity, val type: ActivityTypeEntity?)
+
+/** A class from today that has started, with how it was marked (SPEC §2.12). */
+data class ClassToMark(val entry: TimetableEntryEntity, val status: AttendanceStatus?)
 
 data class UpcomingClasses(
     /** The day these classes are on (today, or the next day that has classes). */
@@ -63,6 +69,7 @@ class HomeViewModel(
     types                : ActivityTypeRepository,
     private val actions  : TaskActions,
     private val looks    : AppearanceStore,
+    private val attendance : AttendanceRepository,
 ) : ViewModel() {
 
     /** Emits once a minute so "next alarm" and "upcoming classes" move on, and at midnight. */
@@ -112,6 +119,40 @@ class HomeViewModel(
     val upcoming: StateFlow<UpcomingClasses> = combine(timetable.observeAll(), holidayDays, minuteTicker) { entries, holidaySet, now ->
         upcomingClasses(entries.filter { it.enabled }, holidaySet, now.toLocalDate(), now.toLocalTime())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UpcomingClasses(null, emptyList(), false))
+
+    /** Today's classes that have started, to mark present/absent/cancelled. Empty on holidays. */
+    val classesToMark: StateFlow<List<ClassToMark>> = combine(
+        timetable.observeAll(),
+        holidayDays,
+        minuteTicker,
+        todayFlow.flatMapLatest { attendance.observeForDay(it.toEpochDay()) },
+    ) { entries, holidaySet, now, marks ->
+        val today = now.toLocalDate()
+        if (today.toEpochDay() in holidaySet) return@combine emptyList()
+        val nowMinutes = now.hour * 60 + now.minute
+        entries.filter { it.enabled && it.dayOfWeek == today.dayOfWeek.value && it.startMinutes <= nowMinutes }
+            .sortedBy { it.startMinutes }
+            .map { e ->
+                val mark = marks.firstOrNull { it.timetableEntryId == e.id && it.startMinutes == e.startMinutes }
+                ClassToMark(e, AttendanceStatus.of(mark?.status))
+            }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Whether there is a timetable at all, so the attendance card can hide. */
+    val hasClasses: StateFlow<Boolean> = timetable.observeAll().map { list -> list.any { it.enabled } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Tapping the current mark again clears it. */
+    fun mark(item: ClassToMark, status: AttendanceStatus) = viewModelScope.launch {
+        val day = today().toEpochDay()
+        if (item.status == status) {
+            attendance.observeForDay(day).first()
+                .firstOrNull { it.timetableEntryId == item.entry.id && it.startMinutes == item.entry.startMinutes }
+                ?.let { attendance.delete(it) }
+        } else {
+            attendance.mark(item.entry, day, status)
+        }
+    }
 
     /** Today's tasks, already ordered by priority then time by the DAO. */
     val todayTasks: StateFlow<List<TaskEntity>> = todayFlow.flatMapLatest { tasks.observeTasksForDay(it.toEpochDay()) }

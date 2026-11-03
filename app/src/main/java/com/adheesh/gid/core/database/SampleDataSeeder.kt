@@ -61,11 +61,33 @@ class SampleDataSeeder(private val db: GIDDatabase) {
         }
         db.timetableDao().upsertAll(ttEntries)
 
+        // ── Syllabus: two units for the first subject, a few topics done ──────
+        val syllabusSubject = subjectRows[0].id
+        val units = listOf("Unit 1: Basics", "Unit 2: Normalisation").mapIndexed { i, name ->
+            SyllabusUnitEntity(id = uuid(), subjectId = syllabusSubject, name = name, sortOrder = i, createdAt = now, updatedAt = now)
+        }
+        db.syllabusDao().upsertUnits(units)
+        db.syllabusDao().upsertTopics(
+            listOf(
+                units[0] to listOf("ER model", "Keys", "Relational algebra"),
+                units[1] to listOf("Functional dependencies", "1NF to 3NF", "BCNF", "Decomposition"),
+            ).flatMap { (unit, names) ->
+                names.mapIndexed { i, name ->
+                    SyllabusTopicEntity(
+                        id = uuid(), unitId = unit.id, subjectId = syllabusSubject, name = name, sortOrder = i,
+                        doneAt = if (unit == units[0] && i < 2) now else null, createdAt = now, updatedAt = now,
+                    )
+                }
+            }
+        )
+
         // ── Exams: one next week, an assignment due tomorrow ──────────────────
+        val midSemId = uuid()
+        db.syllabusDao().insertExamUnits(units.map { ExamUnitEntity(midSemId, it.id) })
         db.examDao().upsertAll(
             listOf(
                 ExamEntity(
-                    id = uuid(), subjectId = subjectRows[0].id, title = "Mid-sem", kind = ExamKind.EXAM.name,
+                    id = midSemId, subjectId = subjectRows[0].id, title = "Mid-sem", kind = ExamKind.EXAM.name,
                     dateEpochDay = today.plusDays(7).toEpochDay(), timeMinutes = 10 * 60, room = "Room 100",
                     createdAt = now, updatedAt = now,
                 ),
@@ -74,6 +96,21 @@ class SampleDataSeeder(private val db: GIDDatabase) {
                     dateEpochDay = today.plusDays(1).toEpochDay(), createdAt = now, updatedAt = now,
                 ),
             )
+        )
+
+        // ── Attendance: the last three weeks of each class, one absence each ──
+        db.attendanceDao().upsertAll(
+            ttEntries.flatMap { entry ->
+                (1..3).map { weeksAgo ->
+                    val date = monday.plusDays(entry.dayOfWeek - 1L).minusWeeks(weeksAgo.toLong())
+                    AttendanceEntity(
+                        id = uuid(), subjectId = entry.subjectId!!, timetableEntryId = entry.id,
+                        dateEpochDay = date.toEpochDay(), startMinutes = entry.startMinutes,
+                        status = (if (weeksAgo == 2) AttendanceStatus.ABSENT else AttendanceStatus.PRESENT).name,
+                        createdAt = now, updatedAt = now,
+                    )
+                }
+            }
         )
 
         // ── 3. Holidays ───────────────────────────────────────────────────────
@@ -169,6 +206,12 @@ class SampleDataSeeder(private val db: GIDDatabase) {
         db.alarmDao().deleteAll()
         db.activitySessionDao().deleteAll()
         db.examDao().deleteAll()
+        db.attendanceDao().deleteAll()
+        db.syllabusDao().run {
+            deleteAllLinks()
+            deleteAllTopics()
+            deleteAllUnits()
+        }
         db.captureDao().deleteAll()
         db.headingDao().deleteAll()
         db.subjectDao().deleteAll()

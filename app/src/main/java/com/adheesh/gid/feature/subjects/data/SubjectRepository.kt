@@ -87,6 +87,12 @@ class SubjectRepositoryImpl(private val db: GIDDatabase) : SubjectRepository {
         db.timetableDao().unlinkSubject(id)
         headings.deleteForSubject(id)
         db.examDao().deleteForSubject(id)
+        db.attendanceDao().deleteForSubject(id)
+        db.syllabusDao().run {
+            deleteLinksForSubject(id)
+            deleteTopicsForSubject(id)
+            deleteUnitsForSubject(id)
+        }
         subjects.deleteById(id)
     }
 

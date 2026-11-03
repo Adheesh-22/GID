@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.library.ui
 
+import com.adheesh.gid.feature.syllabus.ui.SyllabusCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,6 +54,7 @@ import com.adheesh.gid.core.designsystem.GIDMutedText
 import com.adheesh.gid.core.designsystem.GIDSurface
 import com.adheesh.gid.core.designsystem.GIDText
 import com.adheesh.gid.core.designsystem.SectionTitle
+import com.adheesh.gid.feature.attendance.ui.SubjectAttendanceCard
 import com.adheesh.gid.feature.exams.ui.ExamRow
 import com.adheesh.gid.feature.library.viewmodel.SubjectDetailViewModel
 
@@ -65,12 +67,16 @@ fun SubjectDetailScreen(
     onBack        : () -> Unit,
     onOpenCapture : (String) -> Unit,
     onOpenExam    : (String) -> Unit,
+    onOpenAttendance : () -> Unit,
+    onOpenSyllabus : () -> Unit,
     modifier      : Modifier = Modifier,
 ) {
     val subject  by viewModel.subject.collectAsState()
     val sections by viewModel.sections.collectAsState()
     val headings by viewModel.headings.collectAsState()
     val exams    by viewModel.upcomingExams.collectAsState()
+    val attendance by viewModel.attendance.collectAsState()
+    val syllabus   by viewModel.syllabusProgress.collectAsState()
     val current = subject ?: return
     val subjectById = remember(current) { mapOf(current.id to current) }
 
@@ -114,6 +120,12 @@ fun SubjectDetailScreen(
                 }
             }
         }
+
+        // ── Syllabus for this subject (SPEC §2.13) ───────────────────────────
+        item(key = "syllabus") { SyllabusCard(syllabus, syllabus.level(), onClick = onOpenSyllabus) }
+
+        // ── Attendance for this subject (SPEC §2.12) ─────────────────────────
+        attendance?.let { item -> item(key = "attendance") { SubjectAttendanceCard(item, onClick = onOpenAttendance) } }
 
         // ── Upcoming exams and assignments for this subject (SPEC §2.10) ─────
         items(exams, key = { "x-${it.id}" }) { exam ->

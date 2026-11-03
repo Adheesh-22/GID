@@ -1,6 +1,7 @@
 package com.adheesh.gid.feature.exams.data
 
 import com.adheesh.gid.core.database.ExamDao
+import com.adheesh.gid.core.database.SyllabusDao
 import com.adheesh.gid.core.database.ExamEntity
 import com.adheesh.gid.core.database.ExamKind
 import com.adheesh.gid.core.util.newId
@@ -42,6 +43,7 @@ interface ExamRepository {
  */
 class ExamRepositoryImpl(
     private val dao       : ExamDao,
+    private val syllabus  : SyllabusDao,
     private val onChanged : suspend () -> Unit,
 ) : ExamRepository {
 
@@ -84,6 +86,7 @@ class ExamRepositoryImpl(
 
     override suspend fun delete(id: String) {
         dao.deleteById(id)
+        syllabus.deleteExamUnits(id)
         onChanged()
     }
 }

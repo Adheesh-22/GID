@@ -28,12 +28,18 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CaptureEntity::class,
         CaptureFts::class,
         ExamEntity::class,
+        AttendanceEntity::class,
+        SyllabusUnitEntity::class,
+        SyllabusTopicEntity::class,
+        ExamUnitEntity::class,
     ],
-    version = 3,
+    version = 5,
     exportSchema = true,   // saves schema JSON to app/schemas/ for migration diffing
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = GIDDatabase.SubjectsFromTimetable::class),
         AutoMigration(from = 2, to = 3),   // adds the exams table only
+        AutoMigration(from = 3, to = 4),   // attendance table, subject targets, capture hashes
+        AutoMigration(from = 4, to = 5),   // syllabus units, topics and exam-unit links
     ],
 )
 abstract class GIDDatabase : RoomDatabase() {
@@ -49,6 +55,8 @@ abstract class GIDDatabase : RoomDatabase() {
     abstract fun headingDao(): HeadingDao
     abstract fun captureDao(): CaptureDao
     abstract fun examDao(): ExamDao
+    abstract fun attendanceDao(): AttendanceDao
+    abstract fun syllabusDao(): SyllabusDao
 
     // ── Migration 1 → 2 ──────────────────────────────────────────────────────
     // Room diffs schemas/1.json against 2.json and writes the CREATE TABLE and

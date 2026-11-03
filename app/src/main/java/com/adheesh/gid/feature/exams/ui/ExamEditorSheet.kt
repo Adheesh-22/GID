@@ -1,5 +1,8 @@
 package com.adheesh.gid.feature.exams.ui
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -77,6 +80,19 @@ fun ExamEditorSheet(
     var room      by rememberSaveable { mutableStateOf(initial?.room.orEmpty()) }
     var notes     by rememberSaveable { mutableStateOf(initial?.notes.orEmpty()) }
 
+    // Units this exam covers; loaded once for an existing exam.
+    var pickedUnits  by rememberSaveable { mutableStateOf(listOf<String>()) }
+    var unitsLoaded  by rememberSaveable { mutableStateOf(initial == null) }
+    LaunchedEffect(initial?.id) {
+        if (!unitsLoaded && initial != null) {
+            pickedUnits = viewModel.examUnitIds(initial.id).toList()
+            unitsLoaded = true
+        }
+    }
+    val units by remember(subjectId) {
+        subjectId?.let { viewModel.unitsFor(it) } ?: flowOf(emptyList())
+    }.collectAsState(initial = emptyList())
+
     var newSubjectOpen by rememberSaveable { mutableStateOf(false) }
     var dateOpen       by rememberSaveable { mutableStateOf(false) }
     var timeOpen       by rememberSaveable { mutableStateOf(false) }
@@ -110,6 +126,19 @@ fun ExamEditorSheet(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 subjects.forEach { s -> Choice(s.name, selected = subjectId == s.id, selectedColor = s.color()) { subjectId = s.id } }
                 AddChip(stringResource(R.string.sort_new_subject)) { newSubjectOpen = true }
+            }
+
+            if (units.isNotEmpty()) {
+                Label(stringResource(R.string.syllabus_exam_units))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    units.forEach { u ->
+                        val id = u.unit.id
+                        Choice(u.unit.name, selected = id in pickedUnits) {
+                            pickedUnits = if (id in pickedUnits) pickedUnits - id else pickedUnits + id
+                        }
+                    }
+                }
+                Text(stringResource(R.string.syllabus_exam_units_hint), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
             }
 
             GIDTextField(value = title, onValueChange = { title = it }, label = stringResource(R.string.exam_title_field))
@@ -147,7 +176,9 @@ fun ExamEditorSheet(
                             timeMinutes  = time,
                             room         = room,
                             notes        = notes,
-                        )
+                        ),
+                        // Only units of the chosen subject; a subject change drops the others.
+                        unitIds = pickedUnits.filter { id -> units.any { it.unit.id == id } }.toSet(),
                     )
                     onDismiss()
                 },

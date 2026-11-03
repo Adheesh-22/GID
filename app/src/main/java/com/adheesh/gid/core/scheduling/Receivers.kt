@@ -12,7 +12,9 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.adheesh.gid.GIDApplication
 import com.adheesh.gid.app.AppContainer
+import com.adheesh.gid.core.database.AttendanceStatus
 import com.adheesh.gid.core.notifications.Notifications
+import com.adheesh.gid.feature.attendance.domain.ClassSlot
 import com.adheesh.gid.feature.exams.domain.ExamReminderStep
 import java.util.concurrent.TimeUnit
 
@@ -102,6 +104,70 @@ class EveningPromptReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_EVENING = "com.adheesh.gid.action.EVENING_PROMPT"
+    }
+}
+
+/** A class just ended: ask 'Were you in …?' unless it is already marked. */
+class AttendancePromptReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val slot = slotOf(intent) ?: return
+        launchAsync {
+            val container = context.container
+            // Read it now: the class, holidays and marks may have changed since it was planned.
+            val entry = container.timetableRepository.get(slot.entryId)?.takeIf { it.enabled } ?: return@launchAsync
+            if (container.holidayRepository.getHoliday(slot.dateEpochDay) != null) return@launchAsync
+            if (container.attendanceRepository.isMarked(slot)) return@launchAsync
+            Notifications.showAttendancePrompt(context, slot, entry.subject, entry.startMinutes, entry.endMinutes)
+        }
+    }
+
+    companion object {
+        const val ACTION_PROMPT = "com.adheesh.gid.action.ATTENDANCE_PROMPT"
+        private const val EXTRA_ENTRY = "entry_id"
+        private const val EXTRA_DAY   = "day"
+        private const val EXTRA_START = "start_minutes"
+
+        fun putSlot(intent: Intent, slot: ClassSlot): Intent = intent
+            .putExtra(EXTRA_ENTRY, slot.entryId)
+            .putExtra(EXTRA_DAY, slot.dateEpochDay)
+            .putExtra(EXTRA_START, slot.startMinutes)
+
+        fun slotOf(intent: Intent): ClassSlot? {
+            val entryId = intent.getStringExtra(EXTRA_ENTRY) ?: return null
+            return ClassSlot(entryId, intent.getLongExtra(EXTRA_DAY, 0), intent.getIntExtra(EXTRA_START, 0))
+        }
+    }
+}
+
+/** Present / Absent / Cancelled on the after-class notification. */
+class AttendanceActionReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val slot = AttendancePromptReceiver.slotOf(intent) ?: return
+        val status = AttendanceStatus.of(intent.getStringExtra(EXTRA_STATUS)) ?: return
+        launchAsync {
+            val container = context.container
+            val entry = container.timetableRepository.get(slot.entryId) ?: return@launchAsync
+            val mark = container.attendanceRepository.mark(entry, slot.dateEpochDay, status)
+            val percent = container.attendanceRepository.summaryFor(mark.subjectId)?.summary?.percent
+            Notifications.showAttendanceMarked(context, slot, entry.subject, status, percent)
+        }
+    }
+
+    companion object {
+        private const val ACTION_MARK  = "com.adheesh.gid.action.ATTENDANCE_MARK"
+        private const val EXTRA_STATUS = "status"
+
+        fun pendingIntent(context: Context, slot: ClassSlot, status: AttendanceStatus): PendingIntent {
+            val intent = AttendancePromptReceiver.putSlot(
+                Intent(context, AttendanceActionReceiver::class.java).setAction(ACTION_MARK),
+                slot,
+            ).putExtra(EXTRA_STATUS, status.name)
+            // One request code per class and button, so the three buttons don't overwrite each other.
+            return PendingIntent.getBroadcast(
+                context, slot.hashCode() * 4 + status.ordinal, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
     }
 }
 

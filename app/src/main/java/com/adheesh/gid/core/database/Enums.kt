@@ -45,6 +45,15 @@ enum class ExamKind {
     }
 }
 
+/** How a class went on one date (SPEC §2.12). Cancelled never counts. */
+enum class AttendanceStatus {
+    PRESENT, ABSENT, CANCELLED;
+
+    companion object {
+        fun of(value: String?): AttendanceStatus? = entries.firstOrNull { it.name == value }
+    }
+}
+
 enum class CaptureType {
     EXAM_QUESTION, RESOURCE, NOTE, DEADLINE, IDEA, NOTICE;
 

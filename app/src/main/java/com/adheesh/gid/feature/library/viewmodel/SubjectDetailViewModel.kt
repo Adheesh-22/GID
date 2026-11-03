@@ -1,5 +1,7 @@
 package com.adheesh.gid.feature.library.viewmodel
 
+import com.adheesh.gid.feature.syllabus.data.SyllabusRepository
+import com.adheesh.gid.feature.syllabus.domain.SyllabusProgress
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adheesh.gid.core.database.CaptureEntity
@@ -7,12 +9,15 @@ import com.adheesh.gid.core.database.ExamEntity
 import com.adheesh.gid.core.database.HeadingEntity
 import com.adheesh.gid.core.database.SubjectEntity
 import com.adheesh.gid.feature.capture.data.CaptureRepository
+import com.adheesh.gid.feature.attendance.data.AttendanceRepository
+import com.adheesh.gid.feature.attendance.data.SubjectAttendance
 import com.adheesh.gid.feature.exams.data.ExamRepository
 import com.adheesh.gid.feature.subjects.data.SubjectRepository
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,7 +31,17 @@ class SubjectDetailViewModel(
     captures              : CaptureRepository,
     private val subjects  : SubjectRepository,
     exams                 : ExamRepository,
+    attendance            : AttendanceRepository,
+    syllabus              : SyllabusRepository,
 ) : ViewModel() {
+
+    val syllabusProgress: StateFlow<SyllabusProgress> = syllabus.observeProgress(subjectId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyllabusProgress.EMPTY)
+
+    /** This subject's attendance card, if it has classes or marks (SPEC §2.12). */
+    val attendance: StateFlow<SubjectAttendance?> = attendance.observeSummaries()
+        .map { list -> list.firstOrNull { it.subject.id == subjectId } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val upcomingExams: StateFlow<List<ExamEntity>> = exams.observeUpcomingForSubject(subjectId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

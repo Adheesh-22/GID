@@ -127,6 +127,8 @@
         <receiver android:name=".core.scheduling.ClassReminderReceiver" android:exported="false" />
         <receiver android:name=".core.scheduling.EveningPromptReceiver" android:exported="false" />
         <receiver android:name=".core.scheduling.ExamReminderReceiver" android:exported="false" />
+        <receiver android:name=".core.scheduling.AttendancePromptReceiver" android:exported="false" />
+        <receiver android:name=".core.scheduling.AttendanceActionReceiver" android:exported="false" />
 
         <!-- Home-screen widget (SPEC §2.11) -->
         <receiver

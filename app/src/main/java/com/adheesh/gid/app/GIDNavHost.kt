@@ -1,5 +1,8 @@
 package com.adheesh.gid.app
 
+import com.adheesh.gid.feature.syllabus.domain.SyllabusProgress
+import com.adheesh.gid.feature.syllabus.ui.SyllabusScreen
+import com.adheesh.gid.feature.syllabus.viewmodel.SyllabusViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,6 +64,8 @@ import com.adheesh.gid.feature.alarm.ui.AlarmPopup
 import com.adheesh.gid.feature.alarm.viewmodel.AlarmViewModel
 import com.adheesh.gid.feature.appearance.domain.Appearance
 import com.adheesh.gid.feature.appearance.ui.AppBackdrop
+import com.adheesh.gid.feature.attendance.ui.AttendanceScreen
+import com.adheesh.gid.feature.attendance.viewmodel.AttendanceViewModel
 import com.adheesh.gid.feature.auth.ui.AuthScreen
 import com.adheesh.gid.feature.auth.viewmodel.AuthViewModel
 import com.adheesh.gid.feature.calendar.ui.CalendarScreen
@@ -230,6 +235,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                 types     = container.activityTypeRepository,
                                 actions   = taskActions,
                                 looks     = container.appearanceStore,
+                                attendance = container.attendanceRepository,
                             )
                         }
                         val unsorted by container.captureRepository.observeInboxCount().collectAsState(initial = 0)
@@ -238,6 +244,10 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                         val nextExamSubject by remember(nextExam?.subjectId) {
                             nextExam?.let { container.subjectRepository.observe(it.subjectId) } ?: flowOf(null)
                         }.collectAsState(initial = null)
+                        val nextExamSyllabus by remember(nextExam?.id, nextExam?.subjectId) {
+                            nextExam?.let { e -> container.syllabusRepository.observeExamSyllabus(e.id, e.subjectId).map { it.progress } }
+                                ?: flowOf(SyllabusProgress.EMPTY)
+                        }.collectAsState(initial = SyllabusProgress.EMPTY)
 
                         HomeScreen(
                             viewModel       = vm,
@@ -253,7 +263,9 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                             captureActions  = container.captureActions,
                             nextExam        = nextExam,
                             nextExamSubject = nextExamSubject,
+                            nextExamSyllabus = nextExamSyllabus,
                             onOpenExams     = { backStack.add(Exams) },
+                            onOpenAttendance = { backStack.add(Attendance) },
                         )
                         NotificationPermissionPrompt(container.preferences)
 
@@ -271,7 +283,12 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                         }
                         if (timetableOpen) {
                             val timetableVm = viewModel {
-                                TimetableViewModel(container.timetableRepository, container.classReminderScheduler, container.preferences)
+                                TimetableViewModel(
+                                    container.timetableRepository,
+                                    container.classReminderScheduler,
+                                    container.attendancePromptScheduler,
+                                    container.preferences,
+                                )
                             }
                             TimetablePopup(timetableVm, onDismiss = { timetableOpen = false })
                         }
@@ -311,7 +328,10 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
 
                     entry<SubjectDetail>(metadata = pageMetadata) { key ->
                         val vm = viewModel(key = key.subjectId) {
-                            SubjectDetailViewModel(key.subjectId, container.captureRepository, container.subjectRepository, container.examRepository)
+                            SubjectDetailViewModel(
+                                key.subjectId, container.captureRepository, container.subjectRepository,
+                                container.examRepository, container.attendanceRepository, container.syllabusRepository,
+                            )
                         }
                         Page {
                             SubjectDetailScreen(
@@ -319,6 +339,8 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                 onBack        = { backStack.removeAt(backStack.lastIndex) },
                                 onOpenCapture = { backStack.add(CaptureDetail(it)) },
                                 onOpenExam    = { backStack.add(ExamDetail(it)) },
+                                onOpenAttendance = { backStack.add(Attendance) },
+                                onOpenSyllabus = { backStack.add(Syllabus(key.subjectId)) },
                             )
                         }
                     }
@@ -331,7 +353,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                     }
 
                     entry<Exams>(metadata = pageMetadata) {
-                        val vm = viewModel { ExamsViewModel(container.examRepository, container.subjectRepository) }
+                        val vm = viewModel { ExamsViewModel(container.examRepository, container.subjectRepository, container.syllabusRepository) }
                         Page {
                             ExamsScreen(
                                 viewModel  = vm,
@@ -343,15 +365,31 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
 
                     entry<ExamDetail>(metadata = pageMetadata) { key ->
                         val vm = viewModel(key = key.examId) {
-                            ExamDetailViewModel(key.examId, container.examRepository, container.subjectRepository, container.captureRepository)
+                            ExamDetailViewModel(
+                                key.examId, container.examRepository, container.subjectRepository,
+                                container.captureRepository, container.syllabusRepository,
+                            )
                         }
                         Page {
                             ExamDetailScreen(
                                 viewModel     = vm,
                                 onBack        = { backStack.removeAt(backStack.lastIndex) },
                                 onOpenCapture = { backStack.add(CaptureDetail(it)) },
+                                onOpenSyllabus = { backStack.add(Syllabus(it)) },
                             )
                         }
+                    }
+
+                    entry<Syllabus>(metadata = pageMetadata) { key ->
+                        val vm = viewModel(key = "syllabus-${key.subjectId}") {
+                            SyllabusViewModel(key.subjectId, container.syllabusRepository, container.subjectRepository)
+                        }
+                        Page { SyllabusScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
+                    }
+
+                    entry<Attendance>(metadata = pageMetadata) {
+                        val vm = viewModel { AttendanceViewModel(container.attendanceRepository) }
+                        Page { AttendanceScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
                     }
 
                     entry<History>(metadata = tabMetadata(3)) {
@@ -370,6 +408,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                 preferences = container.preferences,
                                 evening     = container.eveningPromptScheduler,
                                 backup      = container.backupManager,
+                                captureFiles = container.captureFiles,
                             )
                         }
                         // Opaque, so the background photo never shows behind Settings.

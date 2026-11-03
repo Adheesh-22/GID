@@ -1,5 +1,9 @@
 package com.adheesh.gid.feature.exams.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import com.adheesh.gid.core.util.today
+import com.adheesh.gid.feature.syllabus.ui.SyllabusCard
+import com.adheesh.gid.feature.syllabus.ui.TopicRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -61,11 +65,13 @@ fun ExamDetailScreen(
     viewModel     : ExamDetailViewModel,
     onBack        : () -> Unit,
     onOpenCapture : (String) -> Unit,
+    onOpenSyllabus : (String) -> Unit,
     modifier      : Modifier = Modifier,
 ) {
     val exam        by viewModel.exam.collectAsState()
     val subjectById by viewModel.subjectById.collectAsState()
     val saved       by viewModel.savedItems.collectAsState()
+    val syllabus    by viewModel.examSyllabus.collectAsState()
     val current = exam ?: return
     val subject = subjectById[current.subjectId]
     val kind = ExamKind.of(current.kind)
@@ -148,6 +154,35 @@ fun ExamDetailScreen(
             }
         }
 
+        // ── What this exam covers (SPEC §2.13) ───────────────────────────────
+        item {
+            val progress = syllabus.progress
+            val todo = syllabus.units.flatMap { u -> u.topics.filter { it.doneAt == null } }
+            SyllabusCard(
+                progress = progress,
+                level    = progress.level(current.dateEpochDay - today().toEpochDay()),
+                onClick  = { onOpenSyllabus(current.subjectId) },
+                modifier = Modifier.padding(top = 8.dp),
+            ) {
+                if (todo.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.syllabus_to_do),
+                        style    = MaterialTheme.typography.labelLarge,
+                        color    = GIDMutedText,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    todo.take(MAX_TODO).forEach { topic -> TopicRow(topic, onDone = { viewModel.setTopicDone(topic, it) }) }
+                    if (todo.size > MAX_TODO) {
+                        Text(
+                            pluralStringResource(R.plurals.syllabus_more, todo.size - MAX_TODO, todo.size - MAX_TODO),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GIDMutedText,
+                        )
+                    }
+                }
+            }
+        }
+
         item { SectionTitle(stringResource(R.string.exam_saved_items), Modifier.padding(top = 16.dp)) }
         if (saved.isEmpty()) item { EmptyText(stringResource(R.string.exam_saved_empty)) }
         items(saved, key = { it.id }) { capture ->
@@ -166,3 +201,6 @@ fun ExamDetailScreen(
         )
     }
 }
+
+/** Topics still to do shown on the exam page; the rest are on the Syllabus page. */
+private const val MAX_TODO = 8

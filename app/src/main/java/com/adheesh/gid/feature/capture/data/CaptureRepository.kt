@@ -59,6 +59,8 @@ interface CaptureRepository {
     suspend fun sort(ids: List<String>, choice: SortChoice)
     suspend fun markOpened(id: String)
     suspend fun delete(id: String)
+    /** Fingerprints files saved before duplicates were detected (runs once). */
+    suspend fun fillMissingHashes()
 }
 
 class CaptureRepositoryImpl(
@@ -99,6 +101,10 @@ class CaptureRepositoryImpl(
     override suspend fun captureFile(uri: Uri, mimeType: String?): CaptureEntity? {
         val id = newId()
         val stored = files.copyIn(uri, id, mimeType) ?: return null
+        // The same file captured before: keep one copy and point to it.
+        val path = dao.getByHash(stored.contentHash)?.filePath?.takeIf { files.exists(it) && it != stored.path }
+            ?.also { files.delete(stored.path) }
+            ?: stored.path
         val now = nowMillis()
         val isPdf = stored.mimeType == "application/pdf"
         return save(
@@ -108,9 +114,9 @@ class CaptureRepositoryImpl(
                 // A PDF's file name is usually its best title; a photo's (IMG_2041) isn't.
                 title      = if (isPdf) stored.displayName?.substringBeforeLast('.').orEmpty() else "",
                 capturedAt = CaptureTimeResolver.resolve(stored.exifMillis, stored.mediaStoreMillis, now),
-                filePath   = stored.path,
+                filePath   = path,
                 mimeType   = stored.mimeType,
-            )
+            ).copy(contentHash = stored.contentHash)
         )
     }
 
@@ -123,7 +129,7 @@ class CaptureRepositoryImpl(
                 capturedAt = CaptureTimeResolver.resolve(files.exifTime(file), null, now),
                 filePath   = file.absolutePath,
                 mimeType   = "image/jpeg",
-            )
+            ).copy(contentHash = files.hashOf(file.absolutePath))
         )
     }
 
@@ -183,7 +189,16 @@ class CaptureRepositoryImpl(
     override suspend fun delete(id: String) {
         val capture = dao.get(id) ?: return
         dao.deleteById(id)
-        files.delete(capture.filePath)
+        // Another capture of the same file may still use it.
+        val path = capture.filePath ?: return
+        if (dao.countByFilePath(path) == 0) files.delete(path)
+    }
+
+    override suspend fun fillMissingHashes() {
+        dao.getMissingHash().forEach { capture ->
+            val path = capture.filePath ?: return@forEach
+            files.hashOf(path)?.let { dao.setHash(capture.id, it) }
+        }
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

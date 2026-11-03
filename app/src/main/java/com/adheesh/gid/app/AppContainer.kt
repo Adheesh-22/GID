@@ -1,5 +1,7 @@
 package com.adheesh.gid.app
 
+import com.adheesh.gid.feature.syllabus.data.SyllabusRepository
+import com.adheesh.gid.feature.syllabus.data.SyllabusRepositoryImpl
 import android.content.Context
 import com.adheesh.gid.BuildConfig
 import com.adheesh.gid.core.database.DefaultActivityTypes
@@ -8,6 +10,7 @@ import com.adheesh.gid.core.database.GIDPreferences
 import com.adheesh.gid.core.database.SampleDataSeeder
 import com.adheesh.gid.core.notifications.Notifications
 import com.adheesh.gid.core.scheduling.AlarmScheduler
+import com.adheesh.gid.core.scheduling.AttendancePromptScheduler
 import com.adheesh.gid.core.scheduling.ClassReminderScheduler
 import com.adheesh.gid.core.scheduling.DailyMaintenanceWorker
 import com.adheesh.gid.core.scheduling.EveningPromptScheduler
@@ -16,6 +19,9 @@ import com.adheesh.gid.core.scheduling.TimerScheduler
 import com.adheesh.gid.feature.alarm.data.ActivityTypeRepositoryImpl
 import com.adheesh.gid.feature.alarm.data.AlarmRepositoryImpl
 import com.adheesh.gid.feature.appearance.data.AppearanceStore
+import com.adheesh.gid.feature.attendance.data.AttendanceRepository
+import com.adheesh.gid.feature.attendance.data.AttendanceRepositoryImpl
+import com.adheesh.gid.feature.attendance.domain.ClassSlot
 import com.adheesh.gid.feature.auth.data.AuthRepository
 import com.adheesh.gid.feature.auth.data.SupabaseAuthRepository
 import com.adheesh.gid.feature.calendar.data.HolidayRepositoryImpl
@@ -93,12 +99,21 @@ class AppContainer(private val context: Context) {
     val subjectRepository: SubjectRepository = SubjectRepositoryImpl(database)
     val timetableRepository    = TimetableRepositoryImpl(database.timetableDao(), subjectRepository)
     val captureFiles           = CaptureFileStore(context)
-    val examRepository: ExamRepository = ExamRepositoryImpl(database.examDao(), onChanged = { onExamsChanged() })
+    val examRepository: ExamRepository = ExamRepositoryImpl(database.examDao(), database.syllabusDao(), onChanged = { onExamsChanged() })
+    val syllabusRepository: SyllabusRepository = SyllabusRepositoryImpl(database)
     val captureRepository: CaptureRepository = CaptureRepositoryImpl(database, captureFiles, examRepository)
     val captureActions         = CaptureActions(captureRepository, captureFiles, appScope)
     val backupManager          = BackupManager(context, database, preferences, captureFiles)
     val holidayRepository      = HolidayRepositoryImpl(database.holidayDao())
     val activityTypeRepository = ActivityTypeRepositoryImpl(database.activityTypeDao())
+    val attendanceRepository: AttendanceRepository = AttendanceRepositoryImpl(
+        dao         = database.attendanceDao(),
+        subjectDao  = database.subjectDao(),
+        subjects    = subjectRepository,
+        timetable   = timetableRepository,
+        preferences = preferences,
+        onChanged   = { slot -> onAttendanceChanged(slot) },
+    )
     val alarmRepository        = AlarmRepositoryImpl(database.alarmDao())
     val sessionRepository      = SessionRepositoryImpl(database.activitySessionDao())
     val profileRepository: ProfileRepository =
@@ -119,6 +134,8 @@ class AppContainer(private val context: Context) {
     val classReminderScheduler = ClassReminderScheduler(context, timetableRepository, holidayRepository, preferences)
     val eveningPromptScheduler = EveningPromptScheduler(context, preferences)
     val examReminderScheduler  = ExamReminderScheduler(context, examRepository, preferences)
+    val attendancePromptScheduler =
+        AttendancePromptScheduler(context, timetableRepository, holidayRepository, { attendanceRepository }, preferences)
     val sessionManager         = SessionManager(context, sessionRepository, activityTypeRepository, timerScheduler)
 
     // ── Debug seeding ────────────────────────────────────────────────────────
@@ -142,6 +159,7 @@ class AppContainer(private val context: Context) {
         runCatching { classReminderScheduler.replan() }
         runCatching { eveningPromptScheduler.schedule() }
         runCatching { examReminderScheduler.replan() }
+        runCatching { attendancePromptScheduler.replan() }
         runCatching { sessionManager.repairRunning() }
         // Runs once a day too, so the widget's countdown moves on after midnight.
         GIDWidget.refresh(context)
@@ -150,6 +168,13 @@ class AppContainer(private val context: Context) {
     /** After any exam is added, edited, done or deleted. */
     private suspend fun onExamsChanged() {
         runCatching { examReminderScheduler.replan() }
+    }
+
+    /** After a class is marked in the app or from its notification (SPEC §2.12). */
+    private suspend fun onAttendanceChanged(slot: ClassSlot?) {
+        // Marked in the app while its 'Were you in …?' was still showing.
+        if (slot != null) Notifications.cancelAttendancePrompt(context, slot)
+        runCatching { attendancePromptScheduler.replan() }
     }
 
     /** Called once from GIDApplication.onCreate. */
@@ -172,6 +197,10 @@ class AppContainer(private val context: Context) {
                 preferences.setFirstLaunchDone()
             }
             rescheduleEverything()
+            // Captures saved before duplicate detection get their fingerprint once.
+            if (!preferences.captureHashesFilled.first()) {
+                runCatching { captureRepository.fillMissingHashes() }.onSuccess { preferences.setCaptureHashesFilled() }
+            }
             // A profile saved offline is pushed on the next launch (SPEC §2.5).
             preferences.signedInUser.first()?.let { user -> profileRepository.syncPending(user.email) }
         }

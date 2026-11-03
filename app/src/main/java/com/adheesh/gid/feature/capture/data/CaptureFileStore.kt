@@ -10,9 +10,13 @@ import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import com.adheesh.gid.core.util.zone
 import com.adheesh.gid.feature.capture.domain.CaptureTimeResolver
+import com.adheesh.gid.feature.capture.domain.ContentHash
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.security.DigestInputStream
+
+data class StorageUsage(val bytes: Long, val files: Int)
 
 /** A file copied into app storage, with whatever the source said about when it was taken. */
 data class StoredFile(
@@ -22,6 +26,8 @@ data class StoredFile(
     val mediaStoreMillis : Long?,
     /** The file's name in the app it came from, e.g. "Unit 3 notes.pdf". */
     val displayName      : String?,
+    /** SHA-256 of the contents, worked out while copying. */
+    val contentHash      : String,
 )
 
 // ── Capture files: stored on the device only (SPEC §2.8, RULES §6) ───────────
@@ -37,8 +43,12 @@ class CaptureFileStore(private val context: Context) {
         val resolver = context.contentResolver
         val mime = mimeHint?.takeIf { it != "*/*" } ?: resolver.getType(uri) ?: "application/octet-stream"
         val target = File(folder, "$id.${extensionFor(mime)}")
+        // Fingerprint while copying, so the file is read only once.
+        val digest = ContentHash.newDigest()
         val copied = runCatching {
-            resolver.openInputStream(uri)?.use { input -> target.outputStream().use { input.copyTo(it) } } != null
+            resolver.openInputStream(uri)?.use { input ->
+                DigestInputStream(input, digest).use { hashed -> target.outputStream().use { hashed.copyTo(it) } }
+            } != null
         }.getOrDefault(false)
         if (!copied) {
             target.delete()
@@ -50,7 +60,21 @@ class CaptureFileStore(private val context: Context) {
             exifMillis       = if (mime.startsWith("image/")) exifTime(target) else null,
             mediaStoreMillis = dateTaken(uri),
             displayName      = displayName(uri),
+            contentHash      = ContentHash.hex(digest),
         )
+    }
+
+    /** Fingerprint of a file already in our folder; null if it's gone. */
+    suspend fun hashOf(path: String): String? = withContext(Dispatchers.IO) {
+        runCatching { File(path).inputStream().use { ContentHash.of(it) } }.getOrNull()
+    }
+
+    fun exists(path: String?): Boolean = path != null && File(path).isFile
+
+    /** Size and count of the files in our folder, for Settings → Storage. */
+    suspend fun usage(): StorageUsage = withContext(Dispatchers.IO) {
+        val all = folder.listFiles().orEmpty().filter { it.isFile }
+        StorageUsage(bytes = all.sumOf { it.length() }, files = all.size)
     }
 
     /** A file the camera app writes into, plus the content Uri it is handed. */

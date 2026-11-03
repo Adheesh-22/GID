@@ -1,5 +1,11 @@
 package com.adheesh.gid.feature.settings.ui
 
+import android.text.format.Formatter
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.runtime.mutableFloatStateOf
+import com.adheesh.gid.core.designsystem.GIDSurfaceHigh
+import kotlin.math.roundToInt
 import android.content.Intent
 import androidx.core.net.toUri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -47,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -85,6 +92,10 @@ fun SettingsScreen(
     val photoPath  by viewModel.photoPath.collectAsState()
     val incomplete by viewModel.incomplete.collectAsState()
     val evening    by viewModel.eveningPromptMinutes.collectAsState()
+    val target     by viewModel.attendanceTarget.collectAsState()
+    val storage    by viewModel.storage.collectAsState()
+    // Measured each time Settings opens, so it reflects the latest captures.
+    LaunchedEffect(Unit) { viewModel.refreshStorage() }
     val context    = LocalContext.current
     val contactEmail   = stringResource(R.string.contact_email)
     val contactSubject = stringResource(R.string.contact_subject)
@@ -230,10 +241,41 @@ fun SettingsScreen(
                 }
             }
 
+            // ── Attendance target (SPEC §2.12) ───────────────────────────────
+            GIDCard(Modifier.fillMaxWidth()) {
+                var draft by remember(target) { mutableFloatStateOf(target.toFloat()) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionTitle(stringResource(R.string.settings_attendance_target), Modifier.weight(1f))
+                    Text(stringResource(R.string.attendance_percent, draft.roundToInt()), style = MaterialTheme.typography.titleMedium, color = GIDText)
+                }
+                Text(stringResource(R.string.settings_attendance_target_hint), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
+                Slider(
+                    value                 = draft,
+                    onValueChange         = { draft = it },
+                    onValueChangeFinished = { viewModel.setAttendanceTarget(draft.roundToInt()) },
+                    valueRange            = 50f..100f,
+                    steps                 = 9,   // 5% steps
+                    colors                = SliderDefaults.colors(thumbColor = GIDCyan, activeTrackColor = GIDCyan, inactiveTrackColor = GIDSurfaceHigh),
+                )
+            }
+
             // ── Backup (SPEC §2.9) ───────────────────────────────────────────
             GIDCard(Modifier.fillMaxWidth()) {
                 SectionTitle(stringResource(R.string.backup_title))
                 Text(stringResource(R.string.backup_text), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
+                storage?.let { usage ->
+                    Text(
+                        pluralStringResource(
+                            R.plurals.settings_storage_value,
+                            usage.files,
+                            Formatter.formatShortFileSize(LocalContext.current, usage.bytes),
+                            usage.files,
+                        ),
+                        style    = MaterialTheme.typography.bodySmall,
+                        color    = GIDText,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(

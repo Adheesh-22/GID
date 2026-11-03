@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adheesh.gid.core.database.GIDPreferences
 import com.adheesh.gid.core.database.TimetableEntryEntity
+import com.adheesh.gid.core.scheduling.AttendancePromptScheduler
 import com.adheesh.gid.core.scheduling.ClassReminderScheduler
 import com.adheesh.gid.core.util.newId
 import com.adheesh.gid.core.util.nowMillis
@@ -29,6 +30,7 @@ data class ClassDraft(
 class TimetableViewModel(
     private val timetable : TimetableRepository,
     private val reminders : ClassReminderScheduler,
+    private val prompts   : AttendancePromptScheduler,
     preferences           : GIDPreferences,
 ) : ViewModel() {
 
@@ -69,9 +71,10 @@ class TimetableViewModel(
 
     fun delete(entry: TimetableEntryEntity) = edit { timetable.delete(entry.id) }
 
-    /** Every timetable edit re-plans the reminders (Phase 5 step 2). */
+    /** Every timetable edit re-plans the reminders and after-class prompts. */
     private fun edit(block: suspend () -> Unit) = viewModelScope.launch {
         block()
         reminders.replan()
+        prompts.replan()
     }
 }

@@ -1,5 +1,8 @@
 package com.adheesh.gid.core.scheduling
 
+import com.adheesh.gid.feature.attendance.data.AttendanceRepository
+import com.adheesh.gid.feature.attendance.domain.AttendancePromptPlanner
+import com.adheesh.gid.feature.attendance.domain.ClassSlot
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -197,6 +200,42 @@ class ExamReminderScheduler(
 
     private companion object {
         const val REQUEST_BASE = 60_000
+    }
+}
+
+// ── After-class attendance prompts (SPEC §2.12) ──────────────────────────────
+// One 'Were you in …?' per class end for the next week. Re-planned after any
+// mark or timetable change, so a class marked early loses its prompt.
+class AttendancePromptScheduler(
+    private val context     : Context,
+    private val timetable   : TimetableRepository,
+    private val holidays    : HolidayRepository,
+    private val attendance  : () -> AttendanceRepository,
+    private val preferences : GIDPreferences,
+) {
+    suspend fun replan() {
+        val previous = preferences.scheduledAttendancePromptCount.first()
+        repeat(previous) { ExactAlarms.cancel(context, intent(it, null)) }
+
+        val start = today().toEpochDay()
+        val holidayDays = holidays.getHolidayDaysBetween(start, start + PLAN_DAYS).toSet()
+        val marked = attendance().markedBetween(start, start + PLAN_DAYS)
+        val plan = AttendancePromptPlanner.plan(timetable.getAllEnabled(), holidayDays, marked, ZonedDateTime.now(), PLAN_DAYS)
+        plan.forEachIndexed { index, prompt ->
+            ExactAlarms.setWhileIdle(context, prompt.triggerAt, intent(index, prompt.slot))
+        }
+        preferences.setScheduledAttendancePromptCount(plan.size)
+    }
+
+    private fun intent(index: Int, slot: ClassSlot?): PendingIntent {
+        val intent = Intent(context, AttendancePromptReceiver::class.java).setAction(AttendancePromptReceiver.ACTION_PROMPT)
+        if (slot != null) AttendancePromptReceiver.putSlot(intent, slot)
+        return PendingIntent.getBroadcast(context, REQUEST_BASE + index, intent, PI_FLAGS)
+    }
+
+    private companion object {
+        const val PLAN_DAYS = 7
+        const val REQUEST_BASE = 70_000
     }
 }
 

@@ -15,6 +15,8 @@ import kotlinx.serialization.Serializable
 @Serializable data class CaptureDetail(val captureId: String) : NavKey
 @Serializable data object Exams    : NavKey
 @Serializable data class ExamDetail(val examId: String) : NavKey
+@Serializable data object Attendance : NavKey
+@Serializable data class Syllabus(val subjectId: String) : NavKey
 @Serializable data object History  : NavKey
 @Serializable data object Settings : NavKey
 

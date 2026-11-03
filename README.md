@@ -6,7 +6,10 @@ and stay on the phone. The cloud (Supabase) only holds your sign-up profile: nam
 birth, email, phone and institution.
 
 The full product spec is in [docs/SPEC.md](docs/SPEC.md) and the coding rules are in
-[docs/RULES.md](docs/RULES.md).
+[docs/RULES.md](docs/RULES.md). The [docs/app](docs/app) folder describes the app as it is now:
+[FEATURES.md](docs/app/FEATURES.md) (everything it does),
+[ARCHITECTURE.md](docs/app/ARCHITECTURE.md) (how it is built) and
+[CHANGELOG.md](docs/app/CHANGELOG.md) (every change since the first commit).
 
 ## What it does
 
@@ -16,11 +19,13 @@ The full product spec is in [docs/SPEC.md](docs/SPEC.md) and the coding rules ar
 | **Home** | A greeting and your photo, a two-week calendar strip, your next alarm, upcoming classes, and today's tasks (tick them off or add new ones). Tap the greeting to personalise it. |
 | **Personalise** | Change the name Home greets you with, its font (GID, DM Sans, Serif, Mono, Script, Light) and colour. Pick a background photo: GID blurs it on the phone, lets you dim it, and shows it only behind Home, Calendar, Library and History. |
 | **Calendar** | A month grid with task dots and holidays (long-press a date to mark one). Add, edit, delete, track percent done, change priority and move tasks to tomorrow. |
-| **Library** | The Capture Inbox. Share photos, links, text or PDFs to GID from any app (or tap +). GID suggests the subject from your timetable; you sort each item into a subject, heading and type. Search, subject pages, and a deadline can become a task. All on the phone. |
+| **Library** | The Capture Inbox. Share photos, links, text or PDFs to GID from any app (or tap +). GID suggests the subject from your timetable; you sort each item into a subject, heading and type. Search, subject pages, and a deadline can become a task. Files are copied into GID once; capturing the same file again reuses that copy. All on the phone. |
 | **Exams** | Exams, tests, assignments and projects per subject, with countdowns, reminders (a week before, the evening before, the morning of) and the subject's saved Library items. Shown on Home ("Next up"), the Calendar and subject pages. |
+| **Attendance** | Mark each class Present, Absent or Cancelled, from the notification that appears when a class ends or from Home. The Attendance page shows each subject's percent against your target (75% by default, changeable in Settings or per subject) and says how many classes you can miss or must attend. Classes from before you used GID can be added. |
+| **Syllabus** | Units and topics per subject that you tick off, with percent per unit and subject. Paste a whole syllabus and GID splits it into units and topics. An exam can cover chosen units; its page and Home's Next up show progress for just those. |
 | **Widget & tile** | A home-screen widget (Camera, Photo, Paste, Inbox count, next exam) and a Quick Settings tile that opens a capture menu. |
 | **History** | Week by week: productivity bars, sleep bars and a weekly score with the change from last week. Tap a bar to see that day's details. |
-| **Settings** | Profile (photo stays on the phone), evening check-in time, sign out, **Backup** export/import (one .zip you keep), and the **Reliability** checklist. |
+| **Settings** | Profile (photo stays on the phone), evening check-in time, attendance target, sign out, **Backup** export/import (one .zip you keep) with how much space Library files use, and the **Reliability** checklist. |
 | **Motion** | Tabs slide sideways in bottom-bar order. Full-screen pages (Exams, subject and capture pages) and the Alarm and Timetable popups slide up from the bottom and back down on Back. |
 | **Alarm popup** | Alarms with repeat days and an activity type, a "Start sleep now" option, timers, and the activity-types manager. |
 | **Timetable popup** | Your weekly classes, with reminders N minutes before each one (skipped on holidays). |
@@ -113,7 +118,8 @@ feature/<name>/  ui/ (Compose), viewmodel/ (StateFlow), data/ (repositories), do
 - **Business rules are plain Kotlin with unit tests:** `ScoreCalculator`, `SessionCalculator`,
   `SessionRules` (closing, the midnight rule, 16-hour auto-close), `TaskRules`,
   `AlarmTimeCalculator`, `ReminderPlanner`, `HistoryCalculator`, `AgeCalculator`,
-  `ExamReminderPlanner`, `Countdown`, `Appearance` and `BoxBlur`.
+  `ExamReminderPlanner`, `Countdown`, `Appearance`, `BoxBlur`, `AttendanceMath`,
+  `AttendancePromptPlanner`, `ContentHash`, `SyllabusParser` and `SyllabusProgress`.
 - **Motion** lives in `app/NavTransitions.kt`: each nav entry is tagged as a tab (with its
   position) or a page, and one rule picks a sideways slide or a slide up/down.
 - **Offline first.** The signed-in account is cached in DataStore, so a saved session opens Home
@@ -124,7 +130,8 @@ feature/<name>/  ui/ (Compose), viewmodel/ (StateFlow), data/ (repositories), do
   edit, and once a day.
 - **Privacy.** Only the `profiles` row goes to Supabase. No analytics or crash-reporting SDKs.
   Library files, the profile photo and the blurred background photo stay in the app's private
-  storage.
+  storage. Shared files are copied in (links from other apps expire); identical files are
+  stored once and deleted only when no capture uses them.
 
 ## Reliability tips
 

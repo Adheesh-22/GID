@@ -32,3 +32,6 @@ changed and exactly how to test it on my phone.
 short comments explaining why, not what. Explain any new concept in two
 sentences in your summary.
 12. Do not run git commit. Suggest a commit message at the end.
+13. Keep docs/app up to date after every task: FEATURES.md (what the app
+does), ARCHITECTURE.md (how it is built) and CHANGELOG.md (add the change
+under Unreleased; move it under a version once committed).

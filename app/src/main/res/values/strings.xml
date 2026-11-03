@@ -481,4 +481,86 @@
     <string name="notif_evening_text">Update today\'s progress so your scores stay true.</string>
     <string name="notif_rationale_title">Allow notifications?</string>
     <string name="notif_rationale_text">GID uses notifications for class reminders, timers, the evening check-in and the alarm ringing screen. Nothing is sent to the internet.</string>
+    <!-- Attendance (SPEC §2.12) -->
+    <string name="channel_attendance">Attendance check-ins</string>
+    <string name="notif_attendance_title">Were you in %1$s?</string>
+    <string name="notif_attendance_text">%1$s–%2$s</string>
+    <string name="notif_attendance_marked_present">Marked present</string>
+    <string name="notif_attendance_marked_absent">Marked absent</string>
+    <string name="notif_attendance_marked_cancelled">Marked cancelled</string>
+    <string name="notif_attendance_percent">%1$s · %2$d%%</string>
+    <string name="attendance_present">Present</string>
+    <string name="attendance_absent">Absent</string>
+    <string name="attendance_cancelled">Cancelled</string>
+    <string name="attendance_remove">Remove mark</string>
+    <string name="attendance_title">Attendance</string>
+    <string name="attendance_today">Attendance today</string>
+    <string name="attendance_see_all">All subjects</string>
+    <string name="attendance_nothing_yet">Nothing to mark yet today.</string>
+    <string name="attendance_empty">Add classes to your timetable, then mark them here or from the notification after each class.</string>
+    <string name="attendance_percent">%1$d%%</string>
+    <string name="attendance_no_data">No classes counted yet</string>
+    <string name="attendance_counts">Attended %1$d of %2$d · target %3$d%%</string>
+    <plurals name="attendance_can_miss">
+        <item quantity="one">You can miss %1$d more</item>
+        <item quantity="other">You can miss %1$d more</item>
+    </plurals>
+    <plurals name="attendance_must_attend">
+        <item quantity="one">Attend the next %1$d class to reach %2$d%%</item>
+        <item quantity="other">Attend the next %1$d to reach %2$d%%</item>
+    </plurals>
+    <string name="attendance_at_limit">Don\'t miss the next one</string>
+    <string name="attendance_unreachable">%1$d%% can\'t be reached any more</string>
+    <string name="attendance_before_gid">Before GID</string>
+    <string name="attendance_before_hint">Classes held before you started marking here.</string>
+    <string name="attendance_prior_present">Attended</string>
+    <string name="attendance_prior_total">Held</string>
+    <string name="attendance_target">Target</string>
+    <string name="attendance_target_default">Default (%1$d%%)</string>
+    <string name="attendance_marks">Marks</string>
+    <string name="attendance_no_marks">No marks yet.</string>
+    <string name="cd_mark_present">Mark %1$s present</string>
+    <string name="cd_mark_absent">Mark %1$s absent</string>
+    <string name="cd_mark_cancelled">Mark %1$s cancelled</string>
+    <string name="settings_attendance_target">Attendance target</string>
+    <string name="settings_attendance_target_hint">Used for every subject without its own target.</string>
+    <plurals name="settings_storage_value">
+        <item quantity="one">Library files: %1$s · %2$d file</item>
+        <item quantity="other">Library files: %1$s · %2$d files</item>
+    </plurals>
+    <!-- Syllabus (SPEC §2.13) -->
+    <string name="syllabus_title">Syllabus</string>
+    <string name="syllabus_open">Open</string>
+    <string name="syllabus_none">No topics yet. Add units and topics, or paste your syllabus.</string>
+    <plurals name="syllabus_progress">
+        <item quantity="one">%1$d of %2$d topic · %3$d%%</item>
+        <item quantity="other">%1$d of %2$d topics · %3$d%%</item>
+    </plurals>
+    <string name="syllabus_percent">%1$d%%</string>
+    <string name="syllabus_chip">%1$d%% syllabus</string>
+    <string name="syllabus_empty">Paste your syllabus with \'Paste list\': lines starting with Unit, Module or Chapter become units, every other line becomes a topic.</string>
+    <string name="syllabus_add_unit">Add unit</string>
+    <string name="syllabus_add_topic">Add topic</string>
+    <string name="syllabus_paste">Paste list</string>
+    <string name="syllabus_paste_hint">One topic per line. A line starting with Unit, Module or Chapter, or ending with a colon, starts a new unit.</string>
+    <string name="syllabus_paste_field">Syllabus</string>
+    <plurals name="syllabus_preview_units">
+        <item quantity="one">%1$d unit</item>
+        <item quantity="other">%1$d units</item>
+    </plurals>
+    <plurals name="syllabus_preview_topics">
+        <item quantity="one">%1$d topic</item>
+        <item quantity="other">%1$d topics</item>
+    </plurals>
+    <string name="syllabus_rename">Rename</string>
+    <string name="syllabus_move_up">Move up</string>
+    <string name="syllabus_move_down">Move down</string>
+    <string name="syllabus_delete">Delete</string>
+    <string name="syllabus_exam_units">Covers</string>
+    <string name="syllabus_exam_units_hint">Pick the units this exam covers. None picked means the whole subject.</string>
+    <string name="syllabus_to_do">Still to do</string>
+    <plurals name="syllabus_more">
+        <item quantity="one">and %1$d more on the Syllabus page</item>
+        <item quantity="other">and %1$d more on the Syllabus page</item>
+    </plurals>
 </resources>

@@ -131,7 +131,12 @@ heading; 'Sort again', 'Delete' (confirm; also deletes the stored file).
 - Share sheet: GID appears when sharing text, links, images or PDFs from any
 app. The capture is saved straight away and a small dialog says 'Saved to
 Inbox' with the suggested subject, plus 'Sort now' and 'Done'.
+- Files are copied into GID (shared links from other apps stop working, and
+the original may be moved or deleted). The same file captured again (same
+contents) reuses the existing copy instead of storing a second one; the file
+is deleted only when no capture uses it any more.
 2.9 Backup (in Settings)
+- A 'Storage' line shows how much space Library files use (size and count).
 - 'Export backup' writes one .zip (database, captured files, profile photo,
 manifest.json with app and database versions) to a place the user picks.
 - 'Import backup' reads such a .zip, refuses one from a newer database
@@ -157,6 +162,48 @@ countdown. Refreshed on every capture or exam change and once a day.
 Paste). Settings > Reliability has an 'Add capture tile' button (Android 13+).
 - Both save through the same path as the share sheet and show the same 'Saved
 to Inbox' card.
+2.12 Attendance (V1.3, on the device only)
+- Each class can be marked Present, Absent or Cancelled for a date.
+Cancelled classes never count. Marking the same class on the same date again
+replaces the mark.
+- When a class ends, a notification asks 'Were you in <subject>?' with
+Present / Absent / Cancelled buttons; tapping one saves the mark and shows
+'Marked present - DBMS 82%'. No prompt on holidays, for disabled classes, or
+when the class is already marked.
+- Home's Upcoming Classes card: today's classes that have started show
+three small buttons (present, absent, cancelled) with the current mark; an
+'Attendance' link opens the Attendance page.
+- Attendance page (slides up): one card per subject with classes or marks:
+percent, a bar (coral below the target, mustard within 5 points above it,
+green otherwise) and advice: 'You can miss N more' or 'Attend the next N to
+reach 75%'. Tap -> subject sheet: every mark (tap to change or remove),
+'Before GID: attended X of Y' (classes before the app was used), and a target
+override for that subject.
+- SubjectDetail shows the subject's attendance line at the top.
+- Settings: 'Attendance target' (50-100%, default 75), used by every subject
+without its own target.
+2.13 Syllabus (V1.4, on the device only)
+- Each subject has units (e.g. 'Unit 1: Intro'), each with topics that are
+ticked off when covered. Percent per unit and per subject.
+- SubjectDetail shows a 'Syllabus' card (topics done of total, percent, bar);
+tap -> Syllabus page (slides up).
+- Syllabus page: units as sections with their percent; topic rows with a
+checkbox and a menu (Rename, Move up, Move down, Delete); '+ Topic' under each
+unit, '+ Unit' at the bottom; unit menu (Rename, Move up, Move down, Delete;
+deleting a unit deletes its topics).
+- 'Paste list': a box to paste a syllabus. A line starting with Unit, Module
+or Chapter, or ending with ':', starts a unit; every other line is a topic
+(leading bullets and numbers removed); topics before any unit go into
+'General'. A preview ('2 units, 7 topics') shows before saving. A unit with
+the same name as an existing one adds its topics to it.
+- Exam editor: after picking the subject, chips to tick the units the exam
+covers. None ticked = the whole subject.
+- ExamDetail: a syllabus card (topics done of total for the exam's units, a
+bar) listing the topics still to do, tickable there; link to the Syllabus
+page. Home's 'Next up' shows a small 'N% syllabus' chip when the subject has
+topics.
+- Bar colour: green when done or on track, mustard when the exam is within 14
+days and under 70% done, coral when within 7 days and under 70% done.
 3. BEHAVIOUR RULES
 Sessions: one table (ActivitySession) feeds both sleep and focus stats.
 - Timer: start creates a RUNNING session with endsAt; finishing or stopping
@@ -231,9 +278,28 @@ headingId?, dueEpochDay?, linkedTaskId?, openedAt?. Full-text index over
 title, note and url. Files live in the app's private files/captures folder.
 - Exam: subjectId, title, kind (EXAM, TEST, ASSIGNMENT, PROJECT),
 dateEpochDay, timeMinutes?, room?, notes, completedAt?, sourceCaptureId?
+- Attendance: subjectId, timetableEntryId?, dateEpochDay, startMinutes,
+status (PRESENT, ABSENT, CANCELLED); unique per (timetableEntryId,
+dateEpochDay, startMinutes).
+- Subject also has attendanceTarget? (percent; null = the Settings target),
+priorPresent and priorTotal (classes before GID). Capture also has
+contentHash? (SHA-256 of the file, to spot the same file captured twice).
+- SyllabusUnit: subjectId, name, sortOrder
+- SyllabusTopic: unitId, subjectId, name, sortOrder, doneAt?
+- ExamUnit: examId, unitId (which units an exam covers)
 Database version 2: migration 1->2 creates one Subject per distinct timetable
 class name and links the classes to it. Version 3 adds the exams table
 (automatic migration, no data changes). Deleting a subject deletes its exams.
+Version 4 adds the attendance table and the new Subject and Capture columns
+(automatic migration). Deleting a subject deletes its attendance marks.
+Version 5 adds the syllabus tables and exam-unit links (automatic
+migration). Deleting a subject deletes its syllabus; deleting an exam or unit
+deletes its links.
+Attendance rules (plain Kotlin, unit tested):
+- percent = present / (present + absent), including the 'before GID' counts.
+- canMiss = the most absences in a row that keep percent >= target.
+- mustAttend = the fewest presents in a row that bring percent back to the
+target (impossible when the target is 100% and a class was missed).
 Capture rules (plain Kotlin, unit tested):
 - capturedAt = the photo's EXIF time, else the gallery's date taken, else
 now; never 0 or in the future.
@@ -248,7 +314,7 @@ OTHER), isDefault
 - Profile (local copy): name, dob, phone, institution, needsSync
 DataStore (not Room): eveningPromptTime, defaultReminderMinutes,
 profilePhotoPath, homeName, homeNameFont, homeNameColor, backgroundPath
-(blurred copy in app files), backgroundDim. Appearance is local only and is
+(blurred copy in app files), backgroundDim, attendanceTarget (default 75). Appearance is local only and is
 not part of the backup.
 Supabase SQL (run once in the SQL Editor):
 create table public.profiles (
@@ -298,5 +364,5 @@ on, and after a reboot.
 8. OUT OF SCOPE FOR V1
 Screen-time tracking, AI features (including reading text from photos),
 friends and leaderboards, cloud sync of productivity data or captures, link
-previews, exam revision packs, spaced-repetition quizzes, attendance and
-syllabus tracking (planned for a later version), Facebook/Instagram login, recurring tasks, iOS.
+previews, exam revision packs and spaced-repetition quizzes (planned for a
+later version), Facebook/Instagram login, recurring tasks, iOS.

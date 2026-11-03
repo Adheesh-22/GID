@@ -1,5 +1,7 @@
 package com.adheesh.gid.feature.home.ui
 
+import com.adheesh.gid.feature.syllabus.domain.SyllabusProgress
+import com.adheesh.gid.feature.syllabus.ui.color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +31,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -66,6 +69,7 @@ import com.adheesh.gid.core.util.formatMinutesOfDay
 import com.adheesh.gid.core.util.formatShort
 import com.adheesh.gid.core.util.today
 import com.adheesh.gid.feature.appearance.ui.Greeting
+import com.adheesh.gid.feature.attendance.ui.MarkButtons
 import com.adheesh.gid.feature.appearance.ui.PersonaliseSheet
 import com.adheesh.gid.feature.capture.data.CaptureActions
 import com.adheesh.gid.feature.exams.ui.CountdownChip
@@ -103,7 +107,9 @@ fun HomeScreen(
     captureActions   : CaptureActions,
     nextExam         : ExamEntity?,
     nextExamSubject  : SubjectEntity?,
+    nextExamSyllabus : SyllabusProgress,
     onOpenExams      : () -> Unit,
+    onOpenAttendance : () -> Unit,
     modifier         : Modifier = Modifier,
 ) {
     val name       by viewModel.name.collectAsState()
@@ -114,6 +120,8 @@ fun HomeScreen(
     val nextAlarm  by viewModel.nextAlarm.collectAsState()
     val upcoming   by viewModel.upcoming.collectAsState()
     val tasks      by viewModel.todayTasks.collectAsState()
+    val toMark     by viewModel.classesToMark.collectAsState()
+    val hasClasses by viewModel.hasClasses.collectAsState()
 
     var sheetTaskId by rememberSaveable { mutableStateOf<String?>(null) }
     var editorOpen  by rememberSaveable { mutableStateOf(false) }
@@ -256,7 +264,52 @@ fun HomeScreen(
                     Text(nextExam.whenText(), style = MaterialTheme.typography.bodySmall, color = GIDMutedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            if (nextExam != null) CountdownChip(nextExam.countdown())
+            if (nextExam != null) {
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    CountdownChip(nextExam.countdown())
+                    nextExamSyllabus.percent?.let { percent ->
+                        Text(
+                            stringResource(R.string.syllabus_chip, percent),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = nextExamSyllabus.level(nextExam.dateEpochDay - today().toEpochDay()).color(),
+                        )
+                    }
+                }
+            }
+        }
+
+        // ── Attendance: today's classes that have started (SPEC §2.12) ──────
+        if (hasClasses) {
+            GIDCard(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.attendance_today),
+                        style    = MaterialTheme.typography.titleMedium,
+                        color    = GIDText,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onOpenAttendance) {
+                        Text(stringResource(R.string.attendance_see_all), color = GIDCyan)
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = GIDCyan)
+                    }
+                }
+                if (toMark.isEmpty()) {
+                    Text(stringResource(R.string.attendance_nothing_yet), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
+                }
+                toMark.forEach { item ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text(item.entry.subject, style = MaterialTheme.typography.bodyMedium, color = GIDText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                "${formatMinutesOfDay(item.entry.startMinutes)}–${formatMinutesOfDay(item.entry.endMinutes)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = GIDMutedText,
+                            )
+                        }
+                        MarkButtons(item.entry.subject, item.status, onMark = { viewModel.mark(item, it) })
+                    }
+                }
+            }
         }
 
         // ── Left column + tall Tasks card ────────────────────────────────────

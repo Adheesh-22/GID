@@ -12,6 +12,8 @@ import com.adheesh.gid.core.util.nowMillis
 import com.adheesh.gid.core.util.today
 import com.adheesh.gid.feature.auth.data.AuthRepository
 import com.adheesh.gid.feature.settings.data.BackupError
+import com.adheesh.gid.feature.capture.data.CaptureFileStore
+import com.adheesh.gid.feature.capture.data.StorageUsage
 import com.adheesh.gid.feature.settings.data.BackupManager
 import com.adheesh.gid.feature.settings.data.ProfilePhotoStore
 import com.adheesh.gid.feature.settings.data.ProfileRepository
@@ -49,6 +51,7 @@ class SettingsViewModel(
     private val preferences : GIDPreferences,
     private val evening     : EveningPromptScheduler,
     private val backup      : BackupManager,
+    private val captureFiles : CaptureFileStore,
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(SettingsUiState())
@@ -59,6 +62,20 @@ class SettingsViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val eveningPromptMinutes: StateFlow<Int> = preferences.eveningPromptTime
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GIDPreferences.DEFAULT_EVENING_PROMPT_MINUTES)
+    val attendanceTarget: StateFlow<Int> = preferences.attendanceTarget
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GIDPreferences.DEFAULT_ATTENDANCE_TARGET)
+
+    /** Space used by Library files; null until measured. */
+    private val _storage = MutableStateFlow<StorageUsage?>(null)
+    val storage: StateFlow<StorageUsage?> = _storage.asStateFlow()
+
+    fun refreshStorage() {
+        viewModelScope.launch { _storage.value = captureFiles.usage() }
+    }
+
+    fun setAttendanceTarget(percent: Int) {
+        viewModelScope.launch { preferences.setAttendanceTarget(percent) }
+    }
 
     init {
         // Load once into editable fields; later DB changes must not overwrite typing.

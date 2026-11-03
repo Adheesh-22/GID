@@ -45,11 +45,15 @@ class GIDPreferences(context: Context) {
         val HOME_NAME_COLOR           = stringPreferencesKey("home_name_color")
         val BACKGROUND_PATH           = stringPreferencesKey("background_path")
         val BACKGROUND_DIM            = floatPreferencesKey("background_dim")
+        val ATTENDANCE_TARGET         = intPreferencesKey("attendance_target")
+        val SCHEDULED_ATTENDANCE_PROMPT_COUNT = intPreferencesKey("scheduled_attendance_prompt_count")
+        val CAPTURE_HASHES_FILLED     = booleanPreferencesKey("capture_hashes_filled")
 
         // Defaults
         const val DEFAULT_EVENING_PROMPT_MINUTES = 21 * 60   // 21:00
         const val DEFAULT_REMINDER_MINUTES_VALUE = 10
         const val DEFAULT_BACKGROUND_DIM         = 0.45f
+        const val DEFAULT_ATTENDANCE_TARGET      = 75
     }
 
     // ── Flows for observation ─────────────────────────────────────────────────
@@ -88,6 +92,10 @@ class GIDPreferences(context: Context) {
     val homeNameColor: Flow<String?> = dataStore.data.map { it[HOME_NAME_COLOR] }
     val backgroundPath: Flow<String?> = dataStore.data.map { it[BACKGROUND_PATH] }
     val backgroundDim: Flow<Float> = dataStore.data.map { it[BACKGROUND_DIM] ?: DEFAULT_BACKGROUND_DIM }
+
+    val attendanceTarget: Flow<Int> = dataStore.data.map { it[ATTENDANCE_TARGET] ?: DEFAULT_ATTENDANCE_TARGET }
+    val scheduledAttendancePromptCount: Flow<Int> = dataStore.data.map { it[SCHEDULED_ATTENDANCE_PROMPT_COUNT] ?: 0 }
+    val captureHashesFilled: Flow<Boolean> = dataStore.data.map { it[CAPTURE_HASHES_FILLED] ?: false }
 
     // ── Write helpers ─────────────────────────────────────────────────────────
 
@@ -153,6 +161,18 @@ class GIDPreferences(context: Context) {
 
     suspend fun setBackgroundDim(dim: Float) {
         dataStore.edit { it[BACKGROUND_DIM] = dim }
+    }
+
+    suspend fun setAttendanceTarget(percent: Int) {
+        dataStore.edit { it[ATTENDANCE_TARGET] = percent }
+    }
+
+    suspend fun setScheduledAttendancePromptCount(count: Int) {
+        dataStore.edit { it[SCHEDULED_ATTENDANCE_PROMPT_COUNT] = count }
+    }
+
+    suspend fun setCaptureHashesFilled() {
+        dataStore.edit { it[CAPTURE_HASHES_FILLED] = true }
     }
 
     suspend fun setFirstLaunchDone() {

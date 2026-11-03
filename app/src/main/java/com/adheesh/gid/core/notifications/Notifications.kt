@@ -15,10 +15,13 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.adheesh.gid.MainActivity
 import com.adheesh.gid.R
+import com.adheesh.gid.core.database.AttendanceStatus
 import com.adheesh.gid.core.database.ExamEntity
 import com.adheesh.gid.core.database.ExamKind
+import com.adheesh.gid.core.scheduling.AttendanceActionReceiver
 import com.adheesh.gid.core.scheduling.SessionActionReceiver
 import com.adheesh.gid.core.util.formatMinutesOfDay
+import com.adheesh.gid.feature.attendance.domain.ClassSlot
 import com.adheesh.gid.feature.exams.domain.ExamReminderStep
 
 // ── Notifications ────────────────────────────────────────────────────────────
@@ -33,11 +36,13 @@ object Notifications {
     const val CHANNEL_SESSIONS = "sessions"
     const val CHANNEL_EVENING  = "evening_prompt"
     const val CHANNEL_EXAMS    = "exam_reminders"
+    const val CHANNEL_ATTENDANCE = "attendance"
 
     const val ID_ALARM_RINGING = 1000
     const val ID_EVENING       = 3000
     private const val ID_CLASS_BASE = 2000
     private const val ID_EXAM_BASE  = 4000
+    private const val ID_ATTENDANCE_BASE = 5000
 
     /** Extra on MainActivity intents telling it which dialog to open. */
     const val EXTRA_OPEN       = "com.adheesh.gid.OPEN"
@@ -71,6 +76,7 @@ object Notifications {
                 NotificationChannel(CHANNEL_SESSIONS, context.getString(R.string.channel_sessions), NotificationManager.IMPORTANCE_LOW),
                 NotificationChannel(CHANNEL_EVENING, context.getString(R.string.channel_evening), NotificationManager.IMPORTANCE_DEFAULT),
                 NotificationChannel(CHANNEL_EXAMS, context.getString(R.string.channel_exams), NotificationManager.IMPORTANCE_HIGH),
+                NotificationChannel(CHANNEL_ATTENDANCE, context.getString(R.string.channel_attendance), NotificationManager.IMPORTANCE_DEFAULT),
             )
         )
     }
@@ -121,6 +127,54 @@ object Notifications {
                 .setAutoCancel(true),
         )
     }
+
+    // ── Attendance (SPEC §2.12) ──────────────────────────────────────────────
+    private fun attendanceId(slot: ClassSlot) = ID_ATTENDANCE_BASE + (slot.hashCode() and 0x0FFF)
+
+    fun showAttendancePrompt(context: Context, slot: ClassSlot, subject: String, startMinutes: Int, endMinutes: Int) {
+        fun action(status: AttendanceStatus, label: Int) =
+            NotificationCompat.Action(0, context.getString(label), AttendanceActionReceiver.pendingIntent(context, slot, status))
+        post(
+            context, attendanceId(slot),
+            base(context, CHANNEL_ATTENDANCE)
+                .setContentTitle(context.getString(R.string.notif_attendance_title, subject))
+                .setContentText(context.getString(R.string.notif_attendance_text, formatMinutesOfDay(startMinutes), formatMinutesOfDay(endMinutes)))
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setContentIntent(openAppIntent(context))
+                .setAutoCancel(true)
+                .addAction(action(AttendanceStatus.PRESENT, R.string.attendance_present))
+                .addAction(action(AttendanceStatus.ABSENT, R.string.attendance_absent))
+                .addAction(action(AttendanceStatus.CANCELLED, R.string.attendance_cancelled)),
+        )
+    }
+
+    /** Replaces the prompt with what was saved, then goes away by itself. */
+    fun showAttendanceMarked(context: Context, slot: ClassSlot, subject: String, status: AttendanceStatus, percent: Int?) {
+        val marked = context.getString(
+            when (status) {
+                AttendanceStatus.PRESENT   -> R.string.notif_attendance_marked_present
+                AttendanceStatus.ABSENT    -> R.string.notif_attendance_marked_absent
+                AttendanceStatus.CANCELLED -> R.string.notif_attendance_marked_cancelled
+            }
+        )
+        val text = if (percent == null) subject else context.getString(R.string.notif_attendance_percent, subject, percent)
+        post(
+            context, attendanceId(slot),
+            base(context, CHANNEL_ATTENDANCE)
+                .setContentTitle(marked)
+                .setContentText(text)
+                .setContentIntent(openAppIntent(context))
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+                .setSilent(true)
+                .setTimeoutAfter(MARKED_TIMEOUT_MILLIS),
+        )
+    }
+
+    /** Marked in the app while the prompt was still up. */
+    fun cancelAttendancePrompt(context: Context, slot: ClassSlot) = cancel(context, attendanceId(slot))
+
+    private const val MARKED_TIMEOUT_MILLIS = 4_000L
 
     // ── Timers and sessions (Phase 6) ────────────────────────────────────────
     fun showTimerRunning(context: Context, sessionId: String, typeName: String, endsAt: Long) {

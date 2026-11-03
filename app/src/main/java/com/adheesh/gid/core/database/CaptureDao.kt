@@ -69,6 +69,21 @@ interface CaptureDao {
     @Query("DELETE FROM captures WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    /** A capture whose file has these exact contents, to reuse its copy. */
+    @Query("SELECT * FROM captures WHERE contentHash = :hash AND filePath IS NOT NULL LIMIT 1")
+    suspend fun getByHash(hash: String): CaptureEntity?
+
+    /** How many captures use this file; it is deleted only when none do. */
+    @Query("SELECT COUNT(*) FROM captures WHERE filePath = :path")
+    suspend fun countByFilePath(path: String): Int
+
+    /** Captures saved before files were fingerprinted. */
+    @Query("SELECT * FROM captures WHERE filePath IS NOT NULL AND contentHash IS NULL")
+    suspend fun getMissingHash(): List<CaptureEntity>
+
+    @Query("UPDATE captures SET contentHash = :hash WHERE id = :id")
+    suspend fun setHash(id: String, hash: String)
+
     @Query("SELECT filePath FROM captures WHERE filePath IS NOT NULL")
     suspend fun allFilePaths(): List<String>
 

@@ -12,9 +12,13 @@ import androidx.room.PrimaryKey
 // status: CaptureStatus – INBOX until the user sorts it
 // capturedAt: when the photo was taken (or saved), used to suggest a subject.
 // filePath:   absolute path inside filesDir/captures (photos and PDFs only).
+//             Two captures may share one file when it is the same file.
 @Entity(
     tableName = "captures",
-    indices   = [Index(value = ["status"]), Index(value = ["subjectId"]), Index(value = ["headingId"])],
+    indices   = [
+        Index(value = ["status"]), Index(value = ["subjectId"]), Index(value = ["headingId"]),
+        Index(value = ["contentHash"]),
+    ],
 )
 data class CaptureEntity(
     @PrimaryKey val id          : String,
@@ -33,6 +37,8 @@ data class CaptureEntity(
     val dueEpochDay             : Long?    = null,
     val linkedTaskId            : String?  = null,
     val openedAt                : Long?    = null,
+    /** SHA-256 of the file, so the same file captured twice shares one copy. */
+    val contentHash             : String?  = null,
     val createdAt               : Long,
     val updatedAt               : Long,
 )

@@ -48,6 +48,12 @@ interface SubjectDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(subjects: List<SubjectEntity>)
 
+    @Query("UPDATE subjects SET attendanceTarget = :target, updatedAt = :now WHERE id = :id")
+    suspend fun setAttendanceTarget(id: String, target: Int?, now: Long)
+
+    @Query("UPDATE subjects SET priorPresent = :present, priorTotal = :total, updatedAt = :now WHERE id = :id")
+    suspend fun setPriorAttendance(id: String, present: Int, total: Int, now: Long)
+
     @Query("DELETE FROM subjects WHERE id = :id")
     suspend fun deleteById(id: String)
 

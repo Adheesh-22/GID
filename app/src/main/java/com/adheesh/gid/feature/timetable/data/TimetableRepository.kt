@@ -9,6 +9,7 @@ interface TimetableRepository {
     fun observeAll(): Flow<List<TimetableEntryEntity>>
     fun observeForDay(dayOfWeek: Int): Flow<List<TimetableEntryEntity>>
     suspend fun getAllEnabled(): List<TimetableEntryEntity>
+    suspend fun get(id: String): TimetableEntryEntity?
     suspend fun save(entry: TimetableEntryEntity)
     suspend fun saveAll(entries: List<TimetableEntryEntity>)
     suspend fun delete(id: String)
@@ -24,6 +25,7 @@ class TimetableRepositoryImpl(
     override fun observeAll()                                = dao.observeAll()
     override fun observeForDay(dayOfWeek: Int)               = dao.observeForDay(dayOfWeek)
     override suspend fun getAllEnabled()                     = dao.getAllEnabled()
+    override suspend fun get(id: String)                     = dao.get(id)
     override suspend fun save(entry: TimetableEntryEntity)   = dao.upsert(linked(entry))
     override suspend fun saveAll(entries: List<TimetableEntryEntity>) = dao.upsertAll(entries.map { linked(it) })
 

@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.settings.ui
 
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import android.text.format.Formatter
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -86,6 +87,7 @@ import java.time.LocalDate
 fun SettingsScreen(
     viewModel  : SettingsViewModel,
     onGoHome   : () -> Unit,
+    onOpenHelp : () -> Unit,
     modifier   : Modifier = Modifier,
 ) {
     val ui         by viewModel.ui.collectAsState()
@@ -220,7 +222,9 @@ fun SettingsScreen(
             // ── Buttons ──────────────────────────────────────────────────────
             PillButton(stringResource(R.string.settings_go_home), Icons.Rounded.Home, onClick = onGoHome)
             PillButton(stringResource(R.string.settings_contact), Icons.Rounded.Mail) {
+                // Some mail apps read the address from the Uri, others from the extra.
                 val intent = Intent(Intent.ACTION_SENDTO, "mailto:$contactEmail".toUri())
+                    .putExtra(Intent.EXTRA_EMAIL, arrayOf(contactEmail))
                     .putExtra(Intent.EXTRA_SUBJECT, contactSubject)
                 runCatching { context.startActivity(intent) }
             }
@@ -294,6 +298,7 @@ fun SettingsScreen(
             }
 
             ReliabilitySection()
+            PillButton(stringResource(R.string.help_title), Icons.AutoMirrored.Rounded.HelpOutline, onClick = onOpenHelp)
             Spacer(Modifier.height(96.dp))   // room above the floating bottom bar
         }
 

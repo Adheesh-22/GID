@@ -130,4 +130,34 @@ class MigrationTest {
         db.query("SELECT COUNT(*) FROM exam_units").use { c -> c.moveToFirst(); assertEquals(1, c.getInt(0)) }
         db.close()
     }
+
+    @Test
+    fun version6SeedsCategoriesAndAddsAlarmOptions() {
+        helper.createDatabase(dbName, 5).use { db ->
+            db.execSQL(
+                "INSERT INTO alarms (id, label, typeId, hour, minute, repeatDaysMask, enabled, createdAt, updatedAt) " +
+                    "VALUES ('a1', 'Wake', 't1', 7, 0, 0, 1, 0, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO captures (id, kind, type, status, title, note, url, filePath, mimeType, capturedAt, subjectId, suggestedSubjectId, headingId, dueEpochDay, linkedTaskId, openedAt, contentHash, createdAt, updatedAt) " +
+                    "VALUES ('c1', 'TEXT', 'RESOURCE', 'SORTED', 'Notes', '', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0)"
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(dbName, 6, true)
+
+        db.query("SELECT COUNT(*) FROM capture_categories").use { c -> c.moveToFirst(); assertEquals(6, c.getInt(0)) }
+        // The capture's old type is now a category id.
+        db.query("SELECT name FROM capture_categories WHERE id = (SELECT type FROM captures WHERE id = 'c1')").use { c ->
+            c.moveToFirst()
+            assertEquals("Resource", c.getString(0))
+        }
+        db.query("SELECT ringtoneUri, snoozeMinutes, requirePattern FROM alarms WHERE id = 'a1'").use { c ->
+            c.moveToFirst()
+            assertEquals(true, c.isNull(0))
+            assertEquals(5, c.getInt(1))
+            assertEquals(1, c.getInt(2))
+        }
+        db.close()
+    }
 }

@@ -32,14 +32,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SyllabusUnitEntity::class,
         SyllabusTopicEntity::class,
         ExamUnitEntity::class,
+        CaptureCategoryEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,   // saves schema JSON to app/schemas/ for migration diffing
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = GIDDatabase.SubjectsFromTimetable::class),
         AutoMigration(from = 2, to = 3),   // adds the exams table only
         AutoMigration(from = 3, to = 4),   // attendance table, subject targets, capture hashes
         AutoMigration(from = 4, to = 5),   // syllabus units, topics and exam-unit links
+        AutoMigration(from = 5, to = 6, spec = GIDDatabase.DefaultCategories::class),   // categories, alarm options
     ],
 )
 abstract class GIDDatabase : RoomDatabase() {
@@ -57,6 +59,7 @@ abstract class GIDDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
     abstract fun attendanceDao(): AttendanceDao
     abstract fun syllabusDao(): SyllabusDao
+    abstract fun captureCategoryDao(): CaptureCategoryDao
 
     // ── Migration 1 → 2 ──────────────────────────────────────────────────────
     // Room diffs schemas/1.json against 2.json and writes the CREATE TABLE and
@@ -85,22 +88,39 @@ abstract class GIDDatabase : RoomDatabase() {
         }
     }
 
+    // ── Migration 5 → 6 ──────────────────────────────────────────────────────
+    // The old fixed types become rows, so captures keep their type unchanged.
+    class DefaultCategories : AutoMigrationSpec {
+        override fun onPostMigrate(db: SupportSQLiteDatabase) = seedCategories(db)
+    }
+
     companion object {
         const val DATABASE_NAME = "gid_database"
 
-        fun create(context: Context, allowDestructiveMigration: Boolean = false): GIDDatabase {
+        /** Inserts the default categories; used on upgrade and on a fresh install. */
+        private fun seedCategories(db: SupportSQLiteDatabase) {
+            val now = System.currentTimeMillis()
+            CaptureType.entries.forEachIndexed { index, type ->
+                db.execSQL(
+                    "INSERT OR IGNORE INTO capture_categories (id, name, sortOrder, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)",
+                    arrayOf<Any>(type.name, type.defaultName, index, now, now),
+                )
+            }
+        }
+
+        /**
+         * There is deliberately no destructive fallback, even in debug builds: those
+         * hold real data too. A missing migration should fail loudly, never wipe.
+         */
+        fun create(context: Context): GIDDatabase {
             val builder = Room.databaseBuilder(
                 context.applicationContext,
                 GIDDatabase::class.java,
                 DATABASE_NAME,
             )
-            if (allowDestructiveMigration) {
-                // Only enabled in debug builds (see AppContainer).
-                // Drops and recreates all tables when the schema changes without
-                // providing a Migration object.  Safe during development; NEVER
-                // acceptable in production where users have real data.
-                builder.fallbackToDestructiveMigration(dropAllTables = true)
-            }
+            builder.addCallback(object : Callback() {
+                override fun onCreate(db: SupportSQLiteDatabase) = seedCategories(db)
+            })
             return builder.build()
         }
     }

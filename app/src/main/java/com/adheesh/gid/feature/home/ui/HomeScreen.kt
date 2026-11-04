@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.home.ui
 
+import com.adheesh.gid.core.designsystem.LocalBackdropColors
 import com.adheesh.gid.feature.syllabus.domain.SyllabusProgress
 import com.adheesh.gid.feature.syllabus.ui.color
 import androidx.compose.foundation.background
@@ -167,6 +168,7 @@ fun HomeScreen(
                 appearance = appearance,
                 fontSize   = GREETING_SIZE,
                 lineHeight = GREETING_LINE,
+                plainColor = LocalBackdropColors.current.text,
                 modifier   = Modifier
                     .weight(1f)
                     .padding(top = GREETING_TOP)
@@ -187,6 +189,12 @@ fun HomeScreen(
 
         // ── Two-week calendar strip ──────────────────────────────────────────
         GIDCard(Modifier.fillMaxWidth()) {
+            Text(
+                today().month.getDisplayName(TextStyle.FULL, Locale.getDefault()),
+                style    = MaterialTheme.typography.titleMedium,
+                color    = GIDText,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+            )
             Row(Modifier.fillMaxWidth()) {
                 DayOfWeek.entries.forEach { d ->
                     Text(

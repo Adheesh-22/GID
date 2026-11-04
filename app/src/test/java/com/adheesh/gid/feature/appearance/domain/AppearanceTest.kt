@@ -49,4 +49,14 @@ class AppearanceTest {
         BoxBlur.blur(pixels, 2, 2, radius = 0)
         assertEquals(listOf(1, 2, 3, 4), pixels.toList())
     }
+
+    @Test fun darkTextOnALightPhotoLightTextOnADarkOne() {
+        assertTrue(BackdropContrast.prefersDarkText(240, 240, 235, dim = 0f))
+        assertTrue(!BackdropContrast.prefersDarkText(20, 20, 30, dim = 0f))
+    }
+
+    @Test fun dimmingALightPhotoSwitchesBackToLightText() {
+        assertTrue(BackdropContrast.prefersDarkText(250, 250, 250, dim = 0.1f))
+        assertTrue(!BackdropContrast.prefersDarkText(250, 250, 250, dim = 0.85f))
+    }
 }

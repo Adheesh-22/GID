@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.capture.data
 
+import com.adheesh.gid.feature.capture.domain.CaptureFileTypes
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -41,7 +42,8 @@ class CaptureFileStore(private val context: Context) {
     /** Copies [uri] into app storage. Returns null when it couldn't be read. */
     suspend fun copyIn(uri: Uri, id: String, mimeHint: String?): StoredFile? = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
-        val mime = mimeHint?.takeIf { it != "*/*" } ?: resolver.getType(uri) ?: "application/octet-stream"
+        val name = displayName(uri)
+        val mime = CaptureFileTypes.resolve(listOf(mimeHint, runCatching { resolver.getType(uri) }.getOrNull()), name)
         val target = File(folder, "$id.${extensionFor(mime)}")
         // Fingerprint while copying, so the file is read only once.
         val digest = ContentHash.newDigest()
@@ -59,7 +61,7 @@ class CaptureFileStore(private val context: Context) {
             mimeType         = mime,
             exifMillis       = if (mime.startsWith("image/")) exifTime(target) else null,
             mediaStoreMillis = dateTaken(uri),
-            displayName      = displayName(uri),
+            displayName      = name,
             contentHash      = ContentHash.hex(digest),
         )
     }
@@ -116,7 +118,9 @@ class CaptureFileStore(private val context: Context) {
     }.getOrNull()?.takeIf { it.isNotBlank() }
 
     private fun extensionFor(mime: String): String =
-        MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) ?: if (mime.startsWith("image/")) "jpg" else "bin"
+        // Viewers go by the extension, and older phones don't all know .docx and .pptx.
+        CaptureFileTypes.extensionOf(mime) ?: MimeTypeMap.getSingleton().getExtensionFromMimeType(mime)
+            ?: if (mime.startsWith("image/")) "jpg" else "bin"
 
     companion object {
         const val FOLDER = "captures"

@@ -1,5 +1,15 @@
 package com.adheesh.gid.core.scheduling
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.adheesh.gid.core.database.AlarmEntity
+import com.adheesh.gid.core.designsystem.GIDCoral
+import com.adheesh.gid.feature.alarm.domain.AlarmPattern
+import com.adheesh.gid.feature.alarm.ui.PatternInput
+import com.adheesh.gid.feature.alarm.ui.PatternTarget
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -72,6 +82,9 @@ class AlarmRingActivity : ComponentActivity() {
                     if (ringing == null && seenRinging && focusOffer == null) finish()
                 }
 
+                // Back mustn't hide the pattern while the alarm is still sounding.
+                BackHandler(enabled = ringing?.requirePattern == true) {}
+
                 Surface(color = GIDBackground, modifier = Modifier.fillMaxSize()) {
                     val offer = focusOffer
                     if (offer != null) {
@@ -126,7 +139,7 @@ class AlarmRingActivity : ComponentActivity() {
 @Composable
 private fun RingingContent(alarm: RingingAlarm?, onSnooze: () -> Unit, onDismiss: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(32.dp),
+        modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 32.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -134,7 +147,7 @@ private fun RingingContent(alarm: RingingAlarm?, onSnooze: () -> Unit, onDismiss
             Icons.Rounded.Alarm,
             contentDescription = null,
             tint = GIDPeriwinkle,
-            modifier = Modifier.padding(bottom = 24.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
         )
         Text(alarm?.timeText.orEmpty(), style = MaterialTheme.typography.displayLarge, color = GIDText)
         Spacer(Modifier.height(8.dp))
@@ -144,13 +157,22 @@ private fun RingingContent(alarm: RingingAlarm?, onSnooze: () -> Unit, onDismiss
             color = GIDText,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(48.dp))
-        Button(
-            onClick = onDismiss,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = MaterialTheme.shapes.large,
-            colors = ButtonDefaults.buttonColors(containerColor = GIDCyan, contentColor = OnCard),
-        ) { Text(stringResource(R.string.action_dismiss), style = MaterialTheme.typography.labelLarge) }
+        when {
+            alarm == null -> Spacer(Modifier.height(48.dp))
+            alarm.requirePattern -> {
+                Spacer(Modifier.height(20.dp))
+                PatternToStop(alarm.alarmId, onDismiss)
+            }
+            else -> {
+                Spacer(Modifier.height(48.dp))
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = MaterialTheme.shapes.large,
+                    colors = ButtonDefaults.buttonColors(containerColor = GIDCyan, contentColor = OnCard),
+                ) { Text(stringResource(R.string.action_dismiss), style = MaterialTheme.typography.labelLarge) }
+            }
+        }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(
             onClick = onSnooze,
@@ -158,12 +180,43 @@ private fun RingingContent(alarm: RingingAlarm?, onSnooze: () -> Unit, onDismiss
             shape = MaterialTheme.shapes.large,
         ) {
             Text(
-                stringResource(R.string.action_snooze_minutes, AlarmScheduler.SNOOZE_MINUTES),
+                stringResource(R.string.action_snooze_minutes, alarm?.snoozeMinutes ?: AlarmEntity.DEFAULT_SNOOZE_MINUTES),
                 style = MaterialTheme.typography.labelLarge,
                 color = GIDText,
             )
         }
     }
+}
+
+/** A fresh random pattern for each ring, to read from the top grid and draw on the bottom one. */
+@Composable
+private fun PatternToStop(alarmId: String, onStopped: () -> Unit) {
+    val pattern = remember(alarmId) { AlarmPattern.random() }
+    var wrong by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+
+    Text(
+        stringResource(if (wrong) R.string.alarm_pattern_wrong else R.string.alarm_pattern_prompt),
+        style = MaterialTheme.typography.bodyMedium,
+        color = if (wrong) GIDCoral else GIDMutedText,
+        textAlign = TextAlign.Center,
+    )
+    Spacer(Modifier.height(10.dp))
+    PatternTarget(pattern, Modifier.width(112.dp))
+    Spacer(Modifier.height(10.dp))
+    PatternInput(
+        wrong        = wrong,
+        onWrongShown = { wrong = false },
+        onDrawn      = { drawn ->
+            if (drawn == pattern) {
+                onStopped()
+            } else {
+                wrong = true
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+        },
+        modifier     = Modifier.widthIn(max = 260.dp).fillMaxWidth(),
+    )
 }
 
 @Composable

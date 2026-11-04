@@ -76,9 +76,10 @@ fun SortSheet(
     if (captures.isEmpty()) return
     val single = captures.singleOrNull()
     val subjects by viewModel.activeSubjects.collectAsState()
+    val categories by viewModel.allCategories.collectAsState()
     val scope = rememberCoroutineScope()
 
-    var type        by rememberSaveable { mutableStateOf(single?.type?.let { CaptureType.ofOrNull(it) }) }
+    var type        by rememberSaveable { mutableStateOf(single?.type) }
     var subjectId   by rememberSaveable { mutableStateOf(single?.let { it.subjectId ?: it.suggestedSubjectId } ?: captures.firstNotNullOfOrNull { it.suggestedSubjectId }) }
     var headingId   by rememberSaveable { mutableStateOf(single?.headingId) }
     var title       by rememberSaveable { mutableStateOf(single?.title.orEmpty()) }
@@ -88,6 +89,7 @@ fun SortSheet(
     var alsoCreate  by rememberSaveable { mutableStateOf(if (single?.linkedTaskId == null) ALSO_TASK else ALSO_NONE) }
 
     var newSubjectOpen by rememberSaveable { mutableStateOf(false) }
+    var newCategoryOpen by rememberSaveable { mutableStateOf(false) }
     var newHeadingOpen by rememberSaveable { mutableStateOf(false) }
     var datePickerOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -116,9 +118,10 @@ fun SortSheet(
 
             Label(stringResource(R.string.sort_type))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CaptureType.entries.forEach { t ->
-                    Choice(t.label(), selected = type == t) { type = t }
+                categories.forEach { c ->
+                    Choice(c.name, selected = type == c.id) { type = c.id }
                 }
+                AddChip(stringResource(R.string.category_new)) { newCategoryOpen = true }
             }
 
             Label(stringResource(R.string.sort_subject))
@@ -141,7 +144,7 @@ fun SortSheet(
                 }
             }
 
-            if (type == CaptureType.DEADLINE) {
+            if (type == CaptureType.DEADLINE.name) {
                 Label(stringResource(R.string.sort_due))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { datePickerOpen = true }) {
@@ -187,7 +190,7 @@ fun SortSheet(
                             headingId   = headingId,
                             title       = if (single != null) title.trim() else null,
                             note        = if (single != null) note.trim() else null,
-                            dueEpochDay = if (chosenType == CaptureType.DEADLINE) dueEpochDay else null,
+                            dueEpochDay = if (chosenType == CaptureType.DEADLINE.name) dueEpochDay else null,
                             createTask  = alsoCreate == ALSO_TASK,
                             createExam  = ExamKind.entries.firstOrNull { it.name == alsoCreate }?.takeIf { subjectId != null },
                         ),
@@ -203,6 +206,11 @@ fun SortSheet(
         }
     }
 
+    if (newCategoryOpen) {
+        NameDialog(stringResource(R.string.category_new), onDismiss = { newCategoryOpen = false }) { name ->
+            scope.launch { type = viewModel.createCategory(name).id }
+        }
+    }
     if (newSubjectOpen) {
         NameDialog(stringResource(R.string.sort_new_subject), onDismiss = { newSubjectOpen = false }) { name ->
             scope.launch { subjectId = viewModel.createSubject(name).id; headingId = null }

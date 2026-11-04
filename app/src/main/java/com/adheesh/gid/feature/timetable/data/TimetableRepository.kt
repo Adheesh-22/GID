@@ -14,6 +14,8 @@ interface TimetableRepository {
     suspend fun saveAll(entries: List<TimetableEntryEntity>)
     suspend fun delete(id: String)
     suspend fun deleteAll()
+    /** Swaps the whole timetable, e.g. for a new semester from VTOP. */
+    suspend fun replaceAll(entries: List<TimetableEntryEntity>)
 }
 
 // Saving a class links it to the Subject of the same name (SPEC §2.7), so
@@ -35,4 +37,5 @@ class TimetableRepositoryImpl(
 
     override suspend fun delete(id: String)                  = dao.deleteById(id)
     override suspend fun deleteAll()                         = dao.deleteAll()
+    override suspend fun replaceAll(entries: List<TimetableEntryEntity>) = dao.replaceAll(entries.map { linked(it) })
 }

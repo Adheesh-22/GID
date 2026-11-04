@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.timetable.viewmodel
 
+import com.adheesh.gid.feature.timetable.domain.VtopTimetable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adheesh.gid.core.database.GIDPreferences
@@ -26,6 +27,8 @@ data class ClassDraft(
     val reminderMinutes : Int,
     val enabled         : Boolean,
 )
+
+private const val LAB_LABEL = "Lab"
 
 class TimetableViewModel(
     private val timetable : TimetableRepository,
@@ -70,6 +73,27 @@ class TimetableViewModel(
     }
 
     fun delete(entry: TimetableEntryEntity) = edit { timetable.delete(entry.id) }
+
+    /** Swaps the whole timetable for one pasted from VTOP (SPEC §2.7). */
+    fun importVtop(parsed: VtopTimetable) = edit {
+        val now = nowMillis()
+        timetable.replaceAll(
+            parsed.classes.map { c ->
+                TimetableEntryEntity(
+                    id              = newId(),
+                    subject         = c.courseName,
+                    dayOfWeek       = c.dayOfWeek,
+                    startMinutes    = c.startMinutes,
+                    endMinutes      = c.endMinutes,
+                    room            = if (c.isLab) "${c.venue} · $LAB_LABEL" else c.venue,
+                    reminderMinutes = defaultReminder.value,
+                    enabled         = true,
+                    createdAt       = now,
+                    updatedAt       = now,
+                )
+            }
+        )
+    }
 
     /** Every timetable edit re-plans the reminders and after-class prompts. */
     private fun edit(block: suspend () -> Unit) = viewModelScope.launch {

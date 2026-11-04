@@ -1,5 +1,7 @@
 package com.adheesh.gid.app
 
+import com.adheesh.gid.feature.capture.data.CategoryRepository
+import com.adheesh.gid.feature.capture.data.CategoryRepositoryImpl
 import com.adheesh.gid.feature.syllabus.data.SyllabusRepository
 import com.adheesh.gid.feature.syllabus.data.SyllabusRepositoryImpl
 import android.content.Context
@@ -86,10 +88,7 @@ class AppContainer(private val context: Context) {
         }.getOrNull()
 
     // ── Local storage ────────────────────────────────────────────────────────
-    val database: GIDDatabase = GIDDatabase.create(
-        context                   = context,
-        allowDestructiveMigration = BuildConfig.DEBUG,
-    )
+    val database: GIDDatabase = GIDDatabase.create(context)
     val preferences = GIDPreferences(context)
     val photoStore  = ProfilePhotoStore(context, preferences)
     val appearanceStore = AppearanceStore(context, preferences)
@@ -101,6 +100,7 @@ class AppContainer(private val context: Context) {
     val captureFiles           = CaptureFileStore(context)
     val examRepository: ExamRepository = ExamRepositoryImpl(database.examDao(), database.syllabusDao(), onChanged = { onExamsChanged() })
     val syllabusRepository: SyllabusRepository = SyllabusRepositoryImpl(database)
+    val categoryRepository: CategoryRepository = CategoryRepositoryImpl(database)
     val captureRepository: CaptureRepository = CaptureRepositoryImpl(database, captureFiles, examRepository)
     val captureActions         = CaptureActions(captureRepository, captureFiles, appScope)
     val backupManager          = BackupManager(context, database, preferences, captureFiles)

@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.calendar.ui
 
+import com.adheesh.gid.core.designsystem.LocalBackdropColors
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -116,22 +117,23 @@ fun CalendarScreen(
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ScreenTitle(stringResource(R.string.calendar_title))
+        val onWallpaper = LocalBackdropColors.current
+        ScreenTitle(stringResource(R.string.calendar_title), color = onWallpaper.text)
 
         // ── Month header ─────────────────────────────────────────────────────
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = viewModel::previousMonth) {
-                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.cd_previous_month), tint = GIDText)
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.cd_previous_month), tint = onWallpaper.text)
             }
             Text(
                 grid.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
                 style     = MaterialTheme.typography.titleLarge,
-                color     = GIDText,
+                color     = onWallpaper.text,
                 textAlign = TextAlign.Center,
                 modifier  = Modifier.weight(1f),
             )
             IconButton(onClick = viewModel::nextMonth) {
-                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.cd_next_month), tint = GIDText)
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.cd_next_month), tint = onWallpaper.text)
             }
         }
 

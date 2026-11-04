@@ -39,12 +39,15 @@ first word of the profile name; only changes Home, not the profile), its font
 (GID, DM Sans, Serif, Mono, Script, Light) and colour (text, cyan, coral,
 mustard, periwinkle, sage, green), and the app background.
 - Background: 'Choose photo' picks an image; the app blurs it once and keeps
-only the blurred copy on the device. A 'Dim' slider (0-85%, default 45%)
+only the blurred copy on the device. Text with no card behind it (titles, search,
+section headings) turns dark on a light photo and stays light on a dark one,
+judged from the photo's average colour after dimming. A 'Dim' slider (0-85%, default 45%)
 darkens it so cards stay readable. 'Remove' goes back to the plain
 background. The photo shows only behind Home, Calendar, Library and History;
 it fades out on Settings, on full-screen pages (Exams, subject and capture
 pages) and while AlarmPopup or TimetablePopup is open.
-- Calendar widget below: 2 rows x 7 columns (this week + next week). Today
+- Calendar widget below, headed by the current month's name: 2 rows x 7
+columns (this week + next week). Today
 highlighted, a dot under dates that have tasks, green for holidays. Tap ->
 Calendar tab (tapped date preselected).
 - Left column: Alarm card (periwinkle). Heading 'Alarm' opens AlarmPopup;
@@ -86,12 +89,24 @@ placeholder), 'Sign out' (confirm dialog). Plus a 'Reliability' section (see
 section 7).
 - Save validates name and DOB, writes locally first, then upserts the
 Supabase profile. If offline, set needsSync and retry on next launch.
+2.5a Help
+- Near the bottom of Settings, 'How to use GID' opens a page (slides up)
+explaining every feature, one expandable section each.
+- 'Contact us' opens the mail app addressed to adhieshjain@gmail.com.
 2.6 AlarmPopup (floating dialog)
 - Segmented control: Alarms | Timers.
 - Alarm row: time, label, type chip, repeat days, on/off switch. Add/edit:
 time picker, label, type, repeat days. For SLEEP/NAP types an extra toggle
 'Start sleep now'.
 - Timer: duration, type, Start. A running timer shows a live countdown.
+- Per alarm: ringtone (system picker; default = the phone's alarm sound), snooze
+length (1, 2, 5, 10, 15 or 30 minutes; default 5) and 'Draw a pattern to stop'
+(default on).
+- Pattern to stop: the ringing screen shows a random 5-dot path on a 3x3 grid,
+numbered in order, different every ring. It stops only when that path is
+drawn on the grid below it, so it can't be dismissed half asleep. A wrong path
+buzzes and can be retried. The notification then offers Snooze only. With the
+option off, the Dismiss button is shown as before.
 - Bottom: 'Activity types' manager: name, color, category. Add/edit/delete
 (defaults can be renamed, not deleted).
 - Default types: Sleep (SLEEP), Nap (NAP), Study session, Vibecode, DSA,
@@ -101,6 +116,14 @@ Learning on YouTube (all FOCUS), Class (CLASS), Free time (FREE).
 timetable' switches to edit mode: add/edit/delete classes, reminder minutes
 before (default 10), enable/disable.
 - No reminders on holiday dates.
+- 'Paste from VTOP' (empty state and edit mode): paste VIT VTOP's whole Time
+Table page. GID reads the THEORY and LAB time rows and each day's cells, so
+every class gets VTOP's exact times; a registered cell looks like
+A2-BACSE202-ETH-PRP576-ALL. Course names come from the course list above the
+grid. Neighbouring cells of one course (L3+L4) become one class. Labs show
+'<venue> · Lab'. A preview shows the semester, the class count and courses
+with no slot (projects, MOOCs) before it replaces the timetable. Past
+attendance marks are kept.
 - Saving a class links it to a Subject with the same name (case and spaces
 ignored), creating the subject if needed.
 2.8 Library (V1.1: Capture Inbox, on the device only, no AI)
@@ -122,6 +145,15 @@ link or text.
 Notice), subject chips (suggested one preselected), heading chips of that
 subject plus 'New heading', optional title and note. Deadline adds a date and
 'Also create a task'. 'Save' marks the capture SORTED.
+- Categories: the Sort sheet's types are editable. Defaults: Exam question,
+Resource, Note, Deadline, Idea, Notice. Add ('+ New category' in the Sort
+sheet or the manager), rename or remove any of them, except that Deadline can
+only be renamed because it carries the due date. Removing a category keeps its
+items; they stay under All with no category.
+- SubjectDetail tabs (swipe or tap): 'All' first, then one tab per category
+with its item count. All also holds the Syllabus and Attendance cards,
+upcoming exams and '+ New heading'. A tune icon by the tabs opens the
+category manager.
 - SubjectDetail: subject name and color; headings as sections in order, then
 'Unfiled'. Rename/recolor/archive/delete the subject; add, rename, reorder and
 delete headings (items in a deleted heading become Unfiled).
@@ -131,6 +163,9 @@ heading; 'Sort again', 'Delete' (confirm; also deletes the stored file).
 - Share sheet: GID appears when sharing text, links, images or PDFs from any
 app. The capture is saved straight away and a small dialog says 'Saved to
 Inbox' with the suggested subject, plus 'Sort now' and 'Done'.
+- Photos, PDFs, Word (.doc, .docx) and PowerPoint (.ppt, .pptx) files can be
+captured by sharing or with the file picker; Word and PowerPoint open in
+another app and are titled with their file name.
 - Files are copied into GID (shared links from other apps stop working, and
 the original may be moved or deleted). The same file captured again (same
 contents) reuses the existing copy instead of storing a second one; the file
@@ -292,6 +327,9 @@ class name and links the classes to it. Version 3 adds the exams table
 (automatic migration, no data changes). Deleting a subject deletes its exams.
 Version 4 adds the attendance table and the new Subject and Capture columns
 (automatic migration). Deleting a subject deletes its attendance marks.
+No build may wipe data on a schema change: there is no destructive fallback.
+Version 6 adds capture categories (seeded with the defaults) and the alarm
+ringtone, snooze and pattern columns (automatic migration).
 Version 5 adds the syllabus tables and exam-unit links (automatic
 migration). Deleting a subject deletes its syllabus; deleting an exam or unit
 deletes its links.
@@ -308,7 +346,10 @@ minutes before it starts to 15 minutes after it ends; none on holidays.
 - Holiday: dateEpochDay, name?
 - ActivityType: name, colorHex, category (SLEEP, NAP, FOCUS, CLASS, FREE,
 OTHER), isDefault
-- Alarm: label, typeId, hour, minute, repeatDaysMask, enabled
+- Alarm: label, typeId, hour, minute, repeatDaysMask, enabled, ringtoneUri?
+(null = phone default), snoozeMinutes (default 5), requirePattern (default on)
+- CaptureCategory: name, sortOrder. The defaults use their old type name as id
+(RESOURCE, ...), so Capture.type holds a category id.
 - ActivitySession: typeId, category, startAt, endAt?, plannedMinutes?, source
 (ALARM, TIMER, MANUAL), status (RUNNING, COMPLETED, CANCELLED), flagged
 - Profile (local copy): name, dob, phone, institution, needsSync

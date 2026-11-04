@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 // ── Capture ───────────────────────────────────────────────────────────────────
 // Anything saved into the Inbox: a photo, a link, some text or a PDF.
 // kind:   CaptureKind   – what was saved
-// type:   CaptureType?  – what it means to the student; null until sorted
+// type:   a CaptureCategory id – what it means to the student; null until sorted
 // status: CaptureStatus – INBOX until the user sorts it
 // capturedAt: when the photo was taken (or saved), used to suggest a subject.
 // filePath:   absolute path inside filesDir/captures (photos and PDFs only).

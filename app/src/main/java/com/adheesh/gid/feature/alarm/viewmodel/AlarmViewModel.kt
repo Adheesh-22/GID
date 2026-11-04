@@ -27,6 +27,10 @@ data class AlarmDraft(
     val minute         : Int,
     val repeatDaysMask : Int,
     val enabled        : Boolean,
+    /** Null = the phone's default alarm sound. */
+    val ringtoneUri    : String?,
+    val snoozeMinutes  : Int,
+    val requirePattern : Boolean,
     /** SLEEP/NAP only: begin a sleep session right away (SPEC §2.6). */
     val startSleepNow  : Boolean,
 )
@@ -62,6 +66,9 @@ class AlarmViewModel(
             minute         = draft.minute,
             repeatDaysMask = draft.repeatDaysMask,
             enabled        = draft.enabled,
+            ringtoneUri    = draft.ringtoneUri,
+            snoozeMinutes  = draft.snoozeMinutes,
+            requirePattern = draft.requirePattern,
             createdAt      = existing?.createdAt ?: now,
             updatedAt      = now,
         )

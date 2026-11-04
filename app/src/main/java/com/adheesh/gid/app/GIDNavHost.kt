@@ -1,5 +1,16 @@
 package com.adheesh.gid.app
 
+import android.app.Activity
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import com.adheesh.gid.core.designsystem.LocalBackdropColors
+import com.adheesh.gid.feature.appearance.ui.backdropColors
+import com.adheesh.gid.feature.appearance.ui.rememberBackdropImage
+import androidx.compose.runtime.CompositionLocalProvider
+import com.adheesh.gid.feature.library.ui.LocalCategoryNames
+import com.adheesh.gid.feature.settings.ui.HelpScreen
 import com.adheesh.gid.feature.syllabus.domain.SyllabusProgress
 import com.adheesh.gid.feature.syllabus.ui.SyllabusScreen
 import com.adheesh.gid.feature.syllabus.viewmodel.SyllabusViewModel
@@ -167,10 +178,23 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
     val incomplete by container.profileRepository.observeIncomplete().collectAsState(initial = false)
     val taskActions = remember { TaskActions(container.taskRepository) }
     val appearance by container.appearanceStore.appearance.collectAsState(initial = Appearance())
+    val categoryNames by remember { container.categoryRepository.observeAll().map { list -> list.associate { it.id to it.name } } }
+        .collectAsState(initial = emptyMap())
     // Home's popups; kept here so the background photo can hide while they are open.
     var alarmsOpen    by rememberSaveable { mutableStateOf(false) }
     var timetableOpen by rememberSaveable { mutableStateOf(false) }
     val showPhoto = current in photoTabs && !alarmsOpen && !timetableOpen
+    val backdrop = rememberBackdropImage(appearance.backgroundPath)
+    val wallpaperColors = backdropColors(backdrop, appearance.backgroundDim, showPhoto)
+
+    // The clock and battery icons follow the same rule as the text.
+    val view = LocalView.current
+    val darkStatusIcons = wallpaperColors.text.luminance() < 0.5f
+    SideEffect {
+        (view.context as? Activity)?.window?.let { window ->
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkStatusIcons
+        }
+    }
 
     val tabs = listOf(
         BottomNavItem(Home,     Icons.Rounded.Home,          stringResource(R.string.nav_home)),
@@ -182,244 +206,251 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
     )
 
     Box(Modifier.fillMaxSize().background(GIDBackground)) {
-        AppBackdrop(appearance, visible = showPhoto)
-        Scaffold(
-            containerColor = Color.Transparent,
-            floatingActionButton = {
-                if (BuildConfig.DEBUG && current == Home) {
-                    SmallFloatingActionButton(
-                        onClick        = { backStack.add(Debug) },
-                        containerColor = Mustard,
-                        contentColor   = OnCard,
-                    ) { Icon(Icons.Rounded.BugReport, contentDescription = stringResource(R.string.cd_debug)) }
-                }
-            },
-            bottomBar = {
-                if (showBottomBar) {
-                    GIDBottomBar(
-                        items          = tabs,
-                        currentDest    = current ?: Home,
-                        onItemSelected = { dest -> backStack.switchTab(dest as NavKey) },
-                    )
-                }
-            },
-        ) { innerPadding ->
-            NavDisplay(
-                backStack        = backStack,
-                modifier         = Modifier.padding(innerPadding),
-                // Back on a tab returns to Home; back on Home leaves the app.
-                onBack           = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
-                entryDecorators  = listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator(),
-                ),
-                // Tabs slide sideways, pages slide up and down (SPEC §1).
-                transitionSpec              = { gidPushTransition() },
-                popTransitionSpec           = { gidPopTransition() },
-                predictivePopTransitionSpec = { gidPopTransition() },
-                entryProvider    = entryProvider {
-                    entry<Auth> {
-                        val vm = viewModel { AuthViewModel(container.authRepository) }
-                        AuthScreen(viewModel = vm)
-                    }
-
-                    entry<Home>(metadata = tabMetadata(0)) {
-                        val vm = viewModel {
-                            HomeViewModel(
-                                profiles  = container.profileRepository,
-                                photos    = container.photoStore,
-                                tasks     = container.taskRepository,
-                                holidays  = container.holidayRepository,
-                                timetable = container.timetableRepository,
-                                alarms    = container.alarmRepository,
-                                types     = container.activityTypeRepository,
-                                actions   = taskActions,
-                                looks     = container.appearanceStore,
-                                attendance = container.attendanceRepository,
-                            )
-                        }
-                        val unsorted by container.captureRepository.observeInboxCount().collectAsState(initial = 0)
-                        val upcomingExams by remember { container.examRepository.observeUpcoming() }.collectAsState(initial = emptyList())
-                        val nextExam = upcomingExams.firstOrNull()
-                        val nextExamSubject by remember(nextExam?.subjectId) {
-                            nextExam?.let { container.subjectRepository.observe(it.subjectId) } ?: flowOf(null)
-                        }.collectAsState(initial = null)
-                        val nextExamSyllabus by remember(nextExam?.id, nextExam?.subjectId) {
-                            nextExam?.let { e -> container.syllabusRepository.observeExamSyllabus(e.id, e.subjectId).map { it.progress } }
-                                ?: flowOf(SyllabusProgress.EMPTY)
-                        }.collectAsState(initial = SyllabusProgress.EMPTY)
-
-                        HomeScreen(
-                            viewModel       = vm,
-                            onOpenSettings  = { backStack.switchTab(Settings) },
-                            onOpenCalendar  = { date ->
-                                container.calendarSelection.value = date
-                                backStack.switchTab(Calendar)
-                            },
-                            onOpenAlarms    = { alarmsOpen = true },
-                            onOpenTimetable = { timetableOpen = true },
-                            unsortedCount   = unsorted,
-                            onOpenLibrary   = { backStack.switchTab(Library) },
-                            captureActions  = container.captureActions,
-                            nextExam        = nextExam,
-                            nextExamSubject = nextExamSubject,
-                            nextExamSyllabus = nextExamSyllabus,
-                            onOpenExams     = { backStack.add(Exams) },
-                            onOpenAttendance = { backStack.add(Attendance) },
-                        )
-                        NotificationPermissionPrompt(container.preferences)
-
-                        if (alarmsOpen) {
-                            val alarmVm = viewModel {
-                                AlarmViewModel(
-                                    alarms            = container.alarmRepository,
-                                    types             = container.activityTypeRepository,
-                                    scheduler         = container.alarmScheduler,
-                                    sessions          = container.sessionManager,
-                                    sessionRepository = container.sessionRepository,
-                                )
-                            }
-                            AlarmPopup(alarmVm, onDismiss = { alarmsOpen = false })
-                        }
-                        if (timetableOpen) {
-                            val timetableVm = viewModel {
-                                TimetableViewModel(
-                                    container.timetableRepository,
-                                    container.classReminderScheduler,
-                                    container.attendancePromptScheduler,
-                                    container.preferences,
-                                )
-                            }
-                            TimetablePopup(timetableVm, onDismiss = { timetableOpen = false })
-                        }
-                    }
-
-                    entry<Calendar>(metadata = tabMetadata(1)) {
-                        val vm = viewModel {
-                            CalendarViewModel(
-                                tasks       = container.taskRepository,
-                                holidays    = container.holidayRepository,
-                                actions     = taskActions,
-                                exams       = container.examRepository,
-                                subjects    = container.subjectRepository,
-                                initialDate = container.calendarSelection.value,
-                            )
-                        }
-                        CalendarScreen(
-                            viewModel         = vm,
-                            externalSelection = container.calendarSelection,
-                            onSelectionUsed   = { container.calendarSelection.value = null },
-                            onOpenExam        = { backStack.add(ExamDetail(it)) },
-                        )
-                    }
-
-                    entry<Library>(metadata = tabMetadata(2)) {
-                        val vm = viewModel { LibraryViewModel(container.captureRepository, container.subjectRepository) }
-                        LibraryScreen(
-                            viewModel      = vm,
-                            captureActions = container.captureActions,
-                            onOpenSubject  = { backStack.add(SubjectDetail(it)) },
-                            onOpenCapture  = { backStack.add(CaptureDetail(it)) },
-                            onOpenExams    = { backStack.add(Exams) },
-                            requestedSort  = libraryRequest?.sortCaptureIds.orEmpty(),
-                            onRequestUsed  = { container.libraryRequest.value = null },
-                        )
-                    }
-
-                    entry<SubjectDetail>(metadata = pageMetadata) { key ->
-                        val vm = viewModel(key = key.subjectId) {
-                            SubjectDetailViewModel(
-                                key.subjectId, container.captureRepository, container.subjectRepository,
-                                container.examRepository, container.attendanceRepository, container.syllabusRepository,
-                            )
-                        }
-                        Page {
-                            SubjectDetailScreen(
-                                viewModel     = vm,
-                                onBack        = { backStack.removeAt(backStack.lastIndex) },
-                                onOpenCapture = { backStack.add(CaptureDetail(it)) },
-                                onOpenExam    = { backStack.add(ExamDetail(it)) },
-                                onOpenAttendance = { backStack.add(Attendance) },
-                                onOpenSyllabus = { backStack.add(Syllabus(key.subjectId)) },
-                            )
-                        }
-                    }
-
-                    entry<CaptureDetail>(metadata = pageMetadata) { key ->
-                        val vm = viewModel(key = key.captureId) {
-                            CaptureDetailViewModel(key.captureId, container.captureRepository, container.subjectRepository)
-                        }
-                        Page { CaptureDetailScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
-                    }
-
-                    entry<Exams>(metadata = pageMetadata) {
-                        val vm = viewModel { ExamsViewModel(container.examRepository, container.subjectRepository, container.syllabusRepository) }
-                        Page {
-                            ExamsScreen(
-                                viewModel  = vm,
-                                onBack     = { backStack.removeAt(backStack.lastIndex) },
-                                onOpenExam = { backStack.add(ExamDetail(it)) },
-                            )
-                        }
-                    }
-
-                    entry<ExamDetail>(metadata = pageMetadata) { key ->
-                        val vm = viewModel(key = key.examId) {
-                            ExamDetailViewModel(
-                                key.examId, container.examRepository, container.subjectRepository,
-                                container.captureRepository, container.syllabusRepository,
-                            )
-                        }
-                        Page {
-                            ExamDetailScreen(
-                                viewModel     = vm,
-                                onBack        = { backStack.removeAt(backStack.lastIndex) },
-                                onOpenCapture = { backStack.add(CaptureDetail(it)) },
-                                onOpenSyllabus = { backStack.add(Syllabus(it)) },
-                            )
-                        }
-                    }
-
-                    entry<Syllabus>(metadata = pageMetadata) { key ->
-                        val vm = viewModel(key = "syllabus-${key.subjectId}") {
-                            SyllabusViewModel(key.subjectId, container.syllabusRepository, container.subjectRepository)
-                        }
-                        Page { SyllabusScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
-                    }
-
-                    entry<Attendance>(metadata = pageMetadata) {
-                        val vm = viewModel { AttendanceViewModel(container.attendanceRepository) }
-                        Page { AttendanceScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
-                    }
-
-                    entry<History>(metadata = tabMetadata(3)) {
-                        val vm = viewModel {
-                            HistoryViewModel(container.taskRepository, container.sessionRepository, container.activityTypeRepository)
-                        }
-                        HistoryScreen(vm)
-                    }
-
-                    entry<Settings>(metadata = tabMetadata(4)) {
-                        val vm = viewModel {
-                            SettingsViewModel(
-                                profiles    = container.profileRepository,
-                                auth        = container.authRepository,
-                                photos      = container.photoStore,
-                                preferences = container.preferences,
-                                evening     = container.eveningPromptScheduler,
-                                backup      = container.backupManager,
-                                captureFiles = container.captureFiles,
-                            )
-                        }
-                        // Opaque, so the background photo never shows behind Settings.
-                        Page { SettingsScreen(viewModel = vm, onGoHome = { backStack.switchTab(Home) }) }
-                    }
-
-                    entry<Debug>(metadata = pageMetadata) {
-                        if (BuildConfig.DEBUG) Page { DebugScreen(onBack = { backStack.removeAt(backStack.lastIndex) }) }
+        CompositionLocalProvider(LocalCategoryNames provides categoryNames, LocalBackdropColors provides wallpaperColors) {
+            AppBackdrop(backdrop, appearance.backgroundDim, visible = showPhoto)
+            Scaffold(
+                containerColor = Color.Transparent,
+                floatingActionButton = {
+                    if (BuildConfig.DEBUG && current == Home) {
+                        SmallFloatingActionButton(
+                            onClick        = { backStack.add(Debug) },
+                            containerColor = Mustard,
+                            contentColor   = OnCard,
+                        ) { Icon(Icons.Rounded.BugReport, contentDescription = stringResource(R.string.cd_debug)) }
                     }
                 },
-            )
+                bottomBar = {
+                    if (showBottomBar) {
+                        GIDBottomBar(
+                            items          = tabs,
+                            currentDest    = current ?: Home,
+                            onItemSelected = { dest -> backStack.switchTab(dest as NavKey) },
+                        )
+                    }
+                },
+            ) { innerPadding ->
+                NavDisplay(
+                    backStack        = backStack,
+                    modifier         = Modifier.padding(innerPadding),
+                    // Back on a tab returns to Home; back on Home leaves the app.
+                    onBack           = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
+                    entryDecorators  = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+                    // Tabs slide sideways, pages slide up and down (SPEC §1).
+                    transitionSpec              = { gidPushTransition() },
+                    popTransitionSpec           = { gidPopTransition() },
+                    predictivePopTransitionSpec = { gidPopTransition() },
+                    entryProvider    = entryProvider {
+                        entry<Auth> {
+                            val vm = viewModel { AuthViewModel(container.authRepository) }
+                            AuthScreen(viewModel = vm)
+                        }
+
+                        entry<Home>(metadata = tabMetadata(0)) {
+                            val vm = viewModel {
+                                HomeViewModel(
+                                    profiles  = container.profileRepository,
+                                    photos    = container.photoStore,
+                                    tasks     = container.taskRepository,
+                                    holidays  = container.holidayRepository,
+                                    timetable = container.timetableRepository,
+                                    alarms    = container.alarmRepository,
+                                    types     = container.activityTypeRepository,
+                                    actions   = taskActions,
+                                    looks     = container.appearanceStore,
+                                    attendance = container.attendanceRepository,
+                                )
+                            }
+                            val unsorted by container.captureRepository.observeInboxCount().collectAsState(initial = 0)
+                            val upcomingExams by remember { container.examRepository.observeUpcoming() }.collectAsState(initial = emptyList())
+                            val nextExam = upcomingExams.firstOrNull()
+                            val nextExamSubject by remember(nextExam?.subjectId) {
+                                nextExam?.let { container.subjectRepository.observe(it.subjectId) } ?: flowOf(null)
+                            }.collectAsState(initial = null)
+                            val nextExamSyllabus by remember(nextExam?.id, nextExam?.subjectId) {
+                                nextExam?.let { e -> container.syllabusRepository.observeExamSyllabus(e.id, e.subjectId).map { it.progress } }
+                                    ?: flowOf(SyllabusProgress.EMPTY)
+                            }.collectAsState(initial = SyllabusProgress.EMPTY)
+
+                            HomeScreen(
+                                viewModel       = vm,
+                                onOpenSettings  = { backStack.switchTab(Settings) },
+                                onOpenCalendar  = { date ->
+                                    container.calendarSelection.value = date
+                                    backStack.switchTab(Calendar)
+                                },
+                                onOpenAlarms    = { alarmsOpen = true },
+                                onOpenTimetable = { timetableOpen = true },
+                                unsortedCount   = unsorted,
+                                onOpenLibrary   = { backStack.switchTab(Library) },
+                                captureActions  = container.captureActions,
+                                nextExam        = nextExam,
+                                nextExamSubject = nextExamSubject,
+                                nextExamSyllabus = nextExamSyllabus,
+                                onOpenExams     = { backStack.add(Exams) },
+                                onOpenAttendance = { backStack.add(Attendance) },
+                            )
+                            NotificationPermissionPrompt(container.preferences)
+
+                            if (alarmsOpen) {
+                                val alarmVm = viewModel {
+                                    AlarmViewModel(
+                                        alarms            = container.alarmRepository,
+                                        types             = container.activityTypeRepository,
+                                        scheduler         = container.alarmScheduler,
+                                        sessions          = container.sessionManager,
+                                        sessionRepository = container.sessionRepository,
+                                    )
+                                }
+                                AlarmPopup(alarmVm, onDismiss = { alarmsOpen = false })
+                            }
+                            if (timetableOpen) {
+                                val timetableVm = viewModel {
+                                    TimetableViewModel(
+                                        container.timetableRepository,
+                                        container.classReminderScheduler,
+                                        container.attendancePromptScheduler,
+                                        container.preferences,
+                                    )
+                                }
+                                TimetablePopup(timetableVm, onDismiss = { timetableOpen = false })
+                            }
+                        }
+
+                        entry<Calendar>(metadata = tabMetadata(1)) {
+                            val vm = viewModel {
+                                CalendarViewModel(
+                                    tasks       = container.taskRepository,
+                                    holidays    = container.holidayRepository,
+                                    actions     = taskActions,
+                                    exams       = container.examRepository,
+                                    subjects    = container.subjectRepository,
+                                    initialDate = container.calendarSelection.value,
+                                )
+                            }
+                            CalendarScreen(
+                                viewModel         = vm,
+                                externalSelection = container.calendarSelection,
+                                onSelectionUsed   = { container.calendarSelection.value = null },
+                                onOpenExam        = { backStack.add(ExamDetail(it)) },
+                            )
+                        }
+
+                        entry<Library>(metadata = tabMetadata(2)) {
+                            val vm = viewModel { LibraryViewModel(container.captureRepository, container.subjectRepository, container.categoryRepository) }
+                            LibraryScreen(
+                                viewModel      = vm,
+                                captureActions = container.captureActions,
+                                onOpenSubject  = { backStack.add(SubjectDetail(it)) },
+                                onOpenCapture  = { backStack.add(CaptureDetail(it)) },
+                                onOpenExams    = { backStack.add(Exams) },
+                                requestedSort  = libraryRequest?.sortCaptureIds.orEmpty(),
+                                onRequestUsed  = { container.libraryRequest.value = null },
+                            )
+                        }
+
+                        entry<SubjectDetail>(metadata = pageMetadata) { key ->
+                            val vm = viewModel(key = key.subjectId) {
+                                SubjectDetailViewModel(
+                                    key.subjectId, container.captureRepository, container.subjectRepository,
+                                    container.examRepository, container.attendanceRepository, container.syllabusRepository,
+                                    container.categoryRepository,
+                                )
+                            }
+                            Page {
+                                SubjectDetailScreen(
+                                    viewModel     = vm,
+                                    onBack        = { backStack.removeAt(backStack.lastIndex) },
+                                    onOpenCapture = { backStack.add(CaptureDetail(it)) },
+                                    onOpenExam    = { backStack.add(ExamDetail(it)) },
+                                    onOpenAttendance = { backStack.add(Attendance) },
+                                    onOpenSyllabus = { backStack.add(Syllabus(key.subjectId)) },
+                                )
+                            }
+                        }
+
+                        entry<CaptureDetail>(metadata = pageMetadata) { key ->
+                            val vm = viewModel(key = key.captureId) {
+                                CaptureDetailViewModel(key.captureId, container.captureRepository, container.subjectRepository, container.categoryRepository)
+                            }
+                            Page { CaptureDetailScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
+                        }
+
+                        entry<Exams>(metadata = pageMetadata) {
+                            val vm = viewModel { ExamsViewModel(container.examRepository, container.subjectRepository, container.syllabusRepository) }
+                            Page {
+                                ExamsScreen(
+                                    viewModel  = vm,
+                                    onBack     = { backStack.removeAt(backStack.lastIndex) },
+                                    onOpenExam = { backStack.add(ExamDetail(it)) },
+                                )
+                            }
+                        }
+
+                        entry<ExamDetail>(metadata = pageMetadata) { key ->
+                            val vm = viewModel(key = key.examId) {
+                                ExamDetailViewModel(
+                                    key.examId, container.examRepository, container.subjectRepository,
+                                    container.captureRepository, container.syllabusRepository,
+                                )
+                            }
+                            Page {
+                                ExamDetailScreen(
+                                    viewModel     = vm,
+                                    onBack        = { backStack.removeAt(backStack.lastIndex) },
+                                    onOpenCapture = { backStack.add(CaptureDetail(it)) },
+                                    onOpenSyllabus = { backStack.add(Syllabus(it)) },
+                                )
+                            }
+                        }
+
+                        entry<Help>(metadata = pageMetadata) {
+                            Page { HelpScreen(onBack = { backStack.removeAt(backStack.lastIndex) }) }
+                        }
+
+                        entry<Syllabus>(metadata = pageMetadata) { key ->
+                            val vm = viewModel(key = "syllabus-${key.subjectId}") {
+                                SyllabusViewModel(key.subjectId, container.syllabusRepository, container.subjectRepository)
+                            }
+                            Page { SyllabusScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
+                        }
+
+                        entry<Attendance>(metadata = pageMetadata) {
+                            val vm = viewModel { AttendanceViewModel(container.attendanceRepository) }
+                            Page { AttendanceScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
+                        }
+
+                        entry<History>(metadata = tabMetadata(3)) {
+                            val vm = viewModel {
+                                HistoryViewModel(container.taskRepository, container.sessionRepository, container.activityTypeRepository)
+                            }
+                            HistoryScreen(vm)
+                        }
+
+                        entry<Settings>(metadata = tabMetadata(4)) {
+                            val vm = viewModel {
+                                SettingsViewModel(
+                                    profiles    = container.profileRepository,
+                                    auth        = container.authRepository,
+                                    photos      = container.photoStore,
+                                    preferences = container.preferences,
+                                    evening     = container.eveningPromptScheduler,
+                                    backup      = container.backupManager,
+                                    captureFiles = container.captureFiles,
+                                )
+                            }
+                            // Opaque, so the background photo never shows behind Settings.
+                            Page { SettingsScreen(viewModel = vm, onGoHome = { backStack.switchTab(Home) }, onOpenHelp = { backStack.add(Help) }) }
+                        }
+
+                        entry<Debug>(metadata = pageMetadata) {
+                            if (BuildConfig.DEBUG) Page { DebugScreen(onBack = { backStack.removeAt(backStack.lastIndex) }) }
+                        }
+                    },
+                )
+            }
         }
     }
 

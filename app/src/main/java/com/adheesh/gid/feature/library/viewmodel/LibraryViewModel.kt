@@ -1,5 +1,7 @@
 package com.adheesh.gid.feature.library.viewmodel
 
+import com.adheesh.gid.core.database.CaptureCategoryEntity
+import com.adheesh.gid.feature.capture.data.CategoryRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adheesh.gid.core.database.CaptureEntity
@@ -28,9 +30,16 @@ import kotlinx.coroutines.launch
  * CaptureDetail so each sorts captures the same way.
  */
 open class SortingViewModel(
-    protected val captures : CaptureRepository,
-    protected val subjects : SubjectRepository,
+    protected val captures   : CaptureRepository,
+    protected val subjects   : SubjectRepository,
+    protected val categories : CategoryRepository,
 ) : ViewModel() {
+
+    /** The Sort sheet's category chips. */
+    val allCategories: StateFlow<List<CaptureCategoryEntity>> = categories.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    suspend fun createCategory(name: String): CaptureCategoryEntity = categories.add(name)
 
     /** Active subjects, for the Sort sheet's chips. */
     val activeSubjects: StateFlow<List<SubjectEntity>> = subjects.observeActive()
@@ -60,7 +69,8 @@ open class SortingViewModel(
 class LibraryViewModel(
     captures : CaptureRepository,
     subjects : SubjectRepository,
-) : SortingViewModel(captures, subjects) {
+    categories : CategoryRepository,
+) : SortingViewModel(captures, subjects, categories) {
 
     val inbox: StateFlow<List<CaptureEntity>> = captures.observeInbox()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.timetable.ui
 
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -70,6 +71,7 @@ fun TimetablePopup(viewModel: TimetableViewModel, onDismiss: () -> Unit) {
     var editorOpen by rememberSaveable { mutableStateOf(false) }
     var editingId  by rememberSaveable { mutableStateOf<String?>(null) }
     var deletingId by rememberSaveable { mutableStateOf<String?>(null) }
+    var vtopOpen   by rememberSaveable { mutableStateOf(false) }
     val all = byDay.values.flatten()
 
     GIDDialog(
@@ -86,6 +88,13 @@ fun TimetablePopup(viewModel: TimetableViewModel, onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (byDay.isEmpty()) EmptyText(stringResource(R.string.timetable_empty))
+            if (byDay.isEmpty() || editMode) {
+                TextButton(onClick = { vtopOpen = true }) {
+                    Icon(Icons.Rounded.ContentPaste, contentDescription = null, tint = GIDCyan)
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.vtop_title), color = GIDCyan)
+                }
+            }
             byDay.forEach { (day, entries) ->
                 Text(dayName(day), style = MaterialTheme.typography.titleMedium, color = GIDMustard)
                 entries.forEach { entry ->
@@ -106,6 +115,14 @@ fun TimetablePopup(viewModel: TimetableViewModel, onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (vtopOpen) {
+        VtopImportSheet(
+            existingClasses = all.size,
+            onImport        = viewModel::importVtop,
+            onDismiss       = { vtopOpen = false },
+        )
     }
 
     if (editorOpen) {
@@ -251,5 +268,5 @@ private fun ClassEditorDialog(
     }
 }
 
-private fun dayName(isoDay: Int): String = DayOfWeek.of(isoDay).getDisplayName(TextStyle.FULL, Locale.getDefault())
+internal fun dayName(isoDay: Int): String = DayOfWeek.of(isoDay).getDisplayName(TextStyle.FULL, Locale.getDefault())
 private fun shortDayName(isoDay: Int): String = DayOfWeek.of(isoDay).getDisplayName(TextStyle.SHORT, Locale.getDefault())

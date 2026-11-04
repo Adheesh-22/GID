@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.capture.data
 
+import com.adheesh.gid.feature.capture.domain.CaptureFileTypes
 import android.net.Uri
 import androidx.room.withTransaction
 import com.adheesh.gid.core.database.CaptureEntity
@@ -26,7 +27,8 @@ import kotlinx.coroutines.flow.flowOf
 
 /** What the Sort sheet decided for one or more captures. */
 data class SortChoice(
-    val type        : CaptureType,
+    /** A CaptureCategory id. */
+    val type        : String,
     val subjectId   : String?,
     val headingId   : String?,
     /** null = leave as is (batch sorting never overwrites each item's own words). */
@@ -106,13 +108,17 @@ class CaptureRepositoryImpl(
             ?.also { files.delete(stored.path) }
             ?: stored.path
         val now = nowMillis()
-        val isPdf = stored.mimeType == "application/pdf"
+        val kind = when {
+            stored.mimeType == CaptureFileTypes.PDF               -> CaptureKind.PDF
+            CaptureFileTypes.isOfficeDocument(stored.mimeType)    -> CaptureKind.DOCUMENT
+            else                                                  -> CaptureKind.PHOTO
+        }
         return save(
             newCapture(
                 id         = id,
-                kind       = if (isPdf) CaptureKind.PDF else CaptureKind.PHOTO,
-                // A PDF's file name is usually its best title; a photo's (IMG_2041) isn't.
-                title      = if (isPdf) stored.displayName?.substringBeforeLast('.').orEmpty() else "",
+                kind       = kind,
+                // A document's file name is usually its best title; a photo's (IMG_2041) isn't.
+                title      = if (kind != CaptureKind.PHOTO) stored.displayName?.substringBeforeLast('.').orEmpty() else "",
                 capturedAt = CaptureTimeResolver.resolve(stored.exifMillis, stored.mediaStoreMillis, now),
                 filePath   = path,
                 mimeType   = stored.mimeType,
@@ -141,7 +147,7 @@ class CaptureRepositoryImpl(
         val kind = choice.createExam ?: return
         val subjectId = choice.subjectId ?: return
         val due = choice.dueEpochDay ?: return
-        if (choice.type != CaptureType.DEADLINE) return
+        if (choice.type != CaptureType.DEADLINE.name) return
         dao.getAll(ids).forEach { capture ->
             if (db.examDao().getBySource(capture.id) != null) return@forEach
             exams.save(
@@ -162,18 +168,18 @@ class CaptureRepositoryImpl(
         val now = nowMillis()
         dao.getAll(ids).forEach { capture ->
             val title = choice.title ?: capture.title
-            val taskId = if (choice.createTask && choice.type == CaptureType.DEADLINE && choice.dueEpochDay != null && capture.linkedTaskId == null) {
+            val taskId = if (choice.createTask && choice.type == CaptureType.DEADLINE.name && choice.dueEpochDay != null && capture.linkedTaskId == null) {
                 createDeadlineTask(capture.copy(title = title), choice.dueEpochDay, now)
             } else capture.linkedTaskId
             dao.upsert(
                 capture.copy(
-                    type         = choice.type.name,
+                    type         = choice.type,
                     status       = CaptureStatus.SORTED.name,
                     subjectId    = choice.subjectId,
                     headingId    = choice.headingId,
                     title        = title,
                     note         = choice.note ?: capture.note,
-                    dueEpochDay  = if (choice.type == CaptureType.DEADLINE) choice.dueEpochDay ?: capture.dueEpochDay else null,
+                    dueEpochDay  = if (choice.type == CaptureType.DEADLINE.name) choice.dueEpochDay ?: capture.dueEpochDay else null,
                     linkedTaskId = taskId,
                     updatedAt    = now,
                 )

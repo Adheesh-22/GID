@@ -35,4 +35,11 @@ interface TimetableDao {
 
     @Query("DELETE FROM timetable_entries")
     suspend fun deleteAll()
+
+    /** All or nothing, so a failed import can't leave half a timetable. */
+    @Transaction
+    suspend fun replaceAll(entries: List<TimetableEntryEntity>) {
+        deleteAll()
+        upsertAll(entries)
+    }
 }

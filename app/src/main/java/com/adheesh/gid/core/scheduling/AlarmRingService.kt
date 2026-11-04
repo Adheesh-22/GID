@@ -1,5 +1,8 @@
 package com.adheesh.gid.core.scheduling
 
+import android.net.Uri
+import androidx.core.net.toUri
+import com.adheesh.gid.core.database.AlarmEntity
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
@@ -40,6 +43,9 @@ data class RingingAlarm(
     val timeText : String,
     val typeId   : String?,
     val category : ActivityCategory,
+    /** Stopping takes the drawn pattern, not a tap (SPEC §2.6). */
+    val requirePattern : Boolean,
+    val snoozeMinutes  : Int,
 )
 
 // ── AlarmRingService ─────────────────────────────────────────────────────────
@@ -70,11 +76,12 @@ class AlarmRingService : Service() {
         if (alarmId == null) { stopSelf(); return }
         // Android requires startForeground within seconds, so post a generic
         // notification first and fill in the label once the database answers.
-        goForeground(buildNotification(getString(R.string.alarm_ringing_title), ""))
-        startSound()
+        goForeground(buildNotification(getString(R.string.alarm_ringing_title), "", showDismiss = false))
 
         scope.launch {
-            val alarm = container.alarmRepository.getById(alarmId)
+            // Whatever the database says, the alarm must make a sound.
+            val alarm = runCatching { container.alarmRepository.getById(alarmId) }.getOrNull()
+            startSound(alarm?.ringtoneUri)
             val type  = alarm?.let { container.activityTypeRepository.getById(it.typeId) }
             val ringing = RingingAlarm(
                 alarmId  = alarmId,
@@ -82,9 +89,11 @@ class AlarmRingService : Service() {
                 timeText = alarm?.let { formatMinutesOfDay(it.hour * 60 + it.minute) }.orEmpty(),
                 typeId   = type?.id,
                 category = type?.let { ActivityCategory.of(it.category) } ?: ActivityCategory.OTHER,
+                requirePattern = alarm?.requirePattern ?: false,
+                snoozeMinutes  = alarm?.snoozeMinutes ?: AlarmEntity.DEFAULT_SNOOZE_MINUTES,
             )
             _ringing.value = ringing
-            goForeground(buildNotification(ringing.label, ringing.timeText))
+            goForeground(buildNotification(ringing.label, ringing.timeText, showDismiss = !ringing.requirePattern))
 
             // Arm the next occurrence now; a one-off alarm switches itself off.
             if (alarm != null && !isSnooze) {
@@ -117,7 +126,7 @@ class AlarmRingService : Service() {
     }
 
     private fun snooze() {
-        _ringing.value?.let { container.alarmScheduler.snooze(it.alarmId) }
+        _ringing.value?.let { container.alarmScheduler.snooze(it.alarmId, it.snoozeMinutes) }
         stopEverything()
     }
 
@@ -138,12 +147,21 @@ class AlarmRingService : Service() {
 
     // ── Sound and vibration ──────────────────────────────────────────────────
 
-    private fun startSound() {
+    /** Plays the alarm's own tone; a tone that has since been deleted falls back to the default. */
+    private fun startSound(ringtoneUri: String?) {
         stopSound()
-        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-        player = runCatching {
-            MediaPlayer().apply {
+        player = listOfNotNull(
+            ringtoneUri?.toUri(),
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+        ).firstNotNullOfOrNull { play(it) }
+        vibrator().vibrate(VibrationEffect.createWaveform(longArrayOf(0, 800, 800), 0))
+    }
+
+    private fun play(uri: Uri): MediaPlayer? {
+        val player = MediaPlayer()
+        return runCatching {
+            player.apply {
                 // USAGE_ALARM uses the alarm volume, which Do Not Disturb lets through by default.
                 setAudioAttributes(
                     AudioAttributes.Builder()
@@ -156,8 +174,10 @@ class AlarmRingService : Service() {
                 prepare()
                 start()
             }
-        }.getOrNull()
-        vibrator().vibrate(VibrationEffect.createWaveform(longArrayOf(0, 800, 800), 0))
+        }.getOrElse {
+            player.release()
+            null
+        }
     }
 
     private fun stopSound() {
@@ -181,7 +201,8 @@ class AlarmRingService : Service() {
         ServiceCompat.startForeground(this, Notifications.ID_ALARM_RINGING, notification, type)
     }
 
-    private fun buildNotification(title: String, text: String): Notification {
+    /** [showDismiss] is off while a pattern is required, so the shade can't skip it. */
+    private fun buildNotification(title: String, text: String, showDismiss: Boolean): Notification {
         val fullScreen = PendingIntent.getActivity(
             this, 0,
             Intent(this, AlarmRingActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION),
@@ -198,7 +219,7 @@ class AlarmRingService : Service() {
             .setFullScreenIntent(fullScreen, true)
             .setContentIntent(fullScreen)
             .addAction(0, getString(R.string.action_snooze), serviceIntent(this, ACTION_SNOOZE))
-            .addAction(0, getString(R.string.action_dismiss), serviceIntent(this, ACTION_DISMISS))
+            .apply { if (showDismiss) addAction(0, getString(R.string.action_dismiss), serviceIntent(this@AlarmRingService, ACTION_DISMISS)) }
             .build()
     }
 

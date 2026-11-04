@@ -1,5 +1,6 @@
 package com.adheesh.gid.core.designsystem
 
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 // ── GID Design Tokens – all colors from SPEC §5 ──────────────────────────────
@@ -44,6 +45,9 @@ val ErrorRed       = Color(0xFFFF5C5C)
 /** Text placed on top of colored cards (periwinkle / coral / mustard) */
 val OnCard         = Color(0xFF161618)
 
+/** Secondary text on a light wallpaper */
+val MutedOnLight   = Color(0xFF3F3F46)
+
 // ── GID-prefixed aliases (canonical names used in screens) ────────────────────
 val GIDBackground  = Background
 val GIDSurface     = Surface
@@ -56,3 +60,17 @@ val GIDCoral       = Coral
 val GIDMustard     = Mustard
 val GIDHolidayGreen = HolidayGreen
 val Error          = ErrorRed
+
+// ── Text drawn straight on the wallpaper ──────────────────────────────────────
+/** Colours for anything with no card behind it; flips when the wallpaper is light. */
+data class BackdropColors(
+    val text   : Color = GIDText,
+    val muted  : Color = GIDMutedText,
+    val accent : Color = GIDCyan,
+    val outline: Color = GIDMutedText,
+)
+
+val DarkTextOnLight = BackdropColors(text = OnCard, muted = MutedOnLight, accent = OnCard, outline = MutedOnLight)
+
+/** Read only by text directly on a tab's background: cards and sheets keep their own colours. */
+val LocalBackdropColors = compositionLocalOf { BackdropColors() }

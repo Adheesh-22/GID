@@ -69,6 +69,10 @@ interface CaptureDao {
     @Query("DELETE FROM captures WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    /** A removed category's items stay under All, with no category. */
+    @Query("UPDATE captures SET type = NULL, updatedAt = :now WHERE type = :categoryId")
+    suspend fun clearCategory(categoryId: String, now: Long)
+
     /** A capture whose file has these exact contents, to reuse its copy. */
     @Query("SELECT * FROM captures WHERE contentHash = :hash AND filePath IS NOT NULL LIMIT 1")
     suspend fun getByHash(hash: String): CaptureEntity?

@@ -1,5 +1,15 @@
 package com.adheesh.gid.feature.library.ui
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.PrimaryScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
 import com.adheesh.gid.feature.syllabus.ui.SyllabusCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -61,6 +71,7 @@ import com.adheesh.gid.feature.library.viewmodel.SubjectDetailViewModel
 // ── SubjectDetail (SPEC §2.8) ────────────────────────────────────────────────
 // Headings in order, each with its items, then Unfiled. The menu renames,
 // recolors or archives the subject; each heading has its own small menu.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubjectDetailScreen(
     viewModel     : SubjectDetailViewModel,
@@ -80,6 +91,8 @@ fun SubjectDetailScreen(
     val current = subject ?: return
     val subjectById = remember(current) { mapOf(current.id to current) }
 
+    val categories by viewModel.allCategories.collectAsState()
+    var categoriesOpen by rememberSaveable { mutableStateOf(false) }
     var menuOpen       by rememberSaveable { mutableStateOf(false) }
     var renameOpen     by rememberSaveable { mutableStateOf(false) }
     var colorOpen      by rememberSaveable { mutableStateOf(false) }
@@ -89,86 +102,145 @@ fun SubjectDetailScreen(
     var renamingHeadingId by rememberSaveable { mutableStateOf<String?>(null) }
     var deletingHeadingId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    LazyColumn(
-        modifier            = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        contentPadding      = androidx.compose.foundation.layout.PaddingValues(16.dp),
-    ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.cd_back), tint = GIDText)
+    // All first, then one page per category; swipe or tap a tab (SPEC §2.8).
+    val pager = rememberPagerState { categories.size + 1 }
+    val scope = rememberCoroutineScope()
+    val allItems = sections.flatMap { it.items }
+
+    Column(modifier.fillMaxSize()) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.cd_back), tint = GIDText)
+            }
+            Dot(current.color(), size = 14.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                current.name,
+                style    = MaterialTheme.typography.displayMedium,
+                color    = GIDText,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Box {
+                IconButton(onClick = { menuOpen = true }) { Icon(Icons.Rounded.MoreVert, stringResource(R.string.cd_more), tint = GIDText) }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = GIDSurface) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.subject_rename), color = GIDText) }, onClick = { menuOpen = false; renameOpen = true })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.subject_color), color = GIDText) }, onClick = { menuOpen = false; colorOpen = true })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.subject_archive), color = GIDCoral) }, onClick = { menuOpen = false; archiveOpen = true })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.subject_delete), color = GIDCoral) }, onClick = { menuOpen = false; deleteOpen = true })
                 }
-                Dot(current.color(), size = 14.dp)
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    current.name,
-                    style    = MaterialTheme.typography.displayMedium,
-                    color    = GIDText,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                Box {
-                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Rounded.MoreVert, stringResource(R.string.cd_more), tint = GIDText) }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = GIDSurface) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.subject_rename), color = GIDText) }, onClick = { menuOpen = false; renameOpen = true })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.subject_color), color = GIDText) }, onClick = { menuOpen = false; colorOpen = true })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.subject_archive), color = GIDCoral) }, onClick = { menuOpen = false; archiveOpen = true })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.subject_delete), color = GIDCoral) }, onClick = { menuOpen = false; deleteOpen = true })
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PrimaryScrollableTabRow(
+                selectedTabIndex = pager.currentPage.coerceAtMost(categories.size),
+                containerColor   = Color.Transparent,
+                contentColor     = GIDCyan,
+                edgePadding      = 16.dp,
+                modifier         = Modifier.weight(1f),
+            ) {
+                val tabs = listOf(stringResource(R.string.subject_tab_all) to allItems.size) +
+                    categories.map { c -> c.name to allItems.count { it.type == c.id } }
+                tabs.forEachIndexed { index, (name, count) ->
+                    Tab(
+                        selected = pager.currentPage == index,
+                        onClick  = { scope.launch { pager.animateScrollToPage(index) } },
+                        text     = { Text(if (count > 0) stringResource(R.string.subject_tab_count, name, count) else name, maxLines = 1) },
+                        selectedContentColor   = GIDCyan,
+                        unselectedContentColor = GIDMutedText,
+                    )
+                }
+            }
+            IconButton(onClick = { categoriesOpen = true }) {
+                Icon(Icons.Rounded.Tune, stringResource(R.string.category_manage), tint = GIDMutedText)
+            }
+        }
+
+        HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth(), key = { if (it == 0) "all" else categories.getOrNull(it - 1)?.id ?: it }) { page ->
+            val category = categories.getOrNull(page - 1)
+            val isAll = page == 0
+            // The All page shows every heading; a category page only those it has items in.
+            val shown = if (isAll) sections else sections
+                .map { section -> section.copy(items = section.items.filter { it.type == category?.id }) }
+                .filter { it.items.isNotEmpty() }
+
+            LazyColumn(
+                modifier            = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding      = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            ) {
+                if (isAll) {
+                    // ── Syllabus for this subject (SPEC §2.13) ───────────────
+                    item(key = "syllabus") { SyllabusCard(syllabus, syllabus.level(), onClick = onOpenSyllabus) }
+
+                    // ── Attendance for this subject (SPEC §2.12) ─────────────
+                    attendance?.let { item -> item(key = "attendance") { SubjectAttendanceCard(item, onClick = onOpenAttendance) } }
+
+                    // ── Upcoming exams and assignments (SPEC §2.10) ──────────
+                    items(exams, key = { "x-${it.id}" }) { exam ->
+                        ExamRow(exam, current, onClick = { onOpenExam(exam.id) })
                     }
                 }
-            }
-        }
 
-        // ── Syllabus for this subject (SPEC §2.13) ───────────────────────────
-        item(key = "syllabus") { SyllabusCard(syllabus, syllabus.level(), onClick = onOpenSyllabus) }
+                if (shown.all { it.items.isEmpty() }) {
+                    item {
+                        EmptyText(
+                            if (isAll) stringResource(R.string.subject_empty)
+                            else stringResource(R.string.subject_tab_empty, category?.name.orEmpty())
+                        )
+                    }
+                }
 
-        // ── Attendance for this subject (SPEC §2.12) ─────────────────────────
-        attendance?.let { item -> item(key = "attendance") { SubjectAttendanceCard(item, onClick = onOpenAttendance) } }
+                shown.forEach { section ->
+                    val heading = section.heading
+                    item(key = "h-${heading?.id ?: "unfiled"}") {
+                        HeadingHeader(
+                            heading  = heading,
+                            isFirst  = heading != null && headings.firstOrNull()?.id == heading.id,
+                            isLast   = heading != null && headings.lastOrNull()?.id == heading.id,
+                            onRename = { heading?.let { renamingHeadingId = it.id } },
+                            onMove   = { up -> heading?.let { viewModel.moveHeading(it, up) } },
+                            onDelete = { heading?.let { deletingHeadingId = it.id } },
+                        )
+                    }
+                    items(section.items, key = { it.id }) { capture ->
+                        CaptureRow(capture, subjectById, selected = false, onClick = { onOpenCapture(capture.id) })
+                    }
+                }
 
-        // ── Upcoming exams and assignments for this subject (SPEC §2.10) ─────
-        items(exams, key = { "x-${it.id}" }) { exam ->
-            ExamRow(exam, current, onClick = { onOpenExam(exam.id) })
-        }
-
-        if (sections.all { it.items.isEmpty() }) item { EmptyText(stringResource(R.string.subject_empty)) }
-
-        sections.forEach { section ->
-            val heading = section.heading
-            item(key = "h-${heading?.id ?: "unfiled"}") {
-                HeadingHeader(
-                    heading  = heading,
-                    isFirst  = heading != null && headings.firstOrNull()?.id == heading.id,
-                    isLast   = heading != null && headings.lastOrNull()?.id == heading.id,
-                    onRename = { heading?.let { renamingHeadingId = it.id } },
-                    onMove   = { up -> heading?.let { viewModel.moveHeading(it, up) } },
-                    onDelete = { heading?.let { deletingHeadingId = it.id } },
-                )
-            }
-            items(section.items, key = { it.id }) { capture ->
-                CaptureRow(capture, subjectById, selected = false, onClick = { onOpenCapture(capture.id) })
-            }
-        }
-
-        item {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, GIDCyan, CircleShape)
-                    .clickable { addHeadingOpen = true }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-            ) {
-                Icon(Icons.Rounded.Add, contentDescription = null, tint = GIDCyan, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.sort_new_heading), color = GIDCyan, style = MaterialTheme.typography.labelLarge)
+                if (isAll) {
+                    item {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .padding(top = 8.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, GIDCyan, CircleShape)
+                                .clickable { addHeadingOpen = true }
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                        ) {
+                            Icon(Icons.Rounded.Add, contentDescription = null, tint = GIDCyan, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.sort_new_heading), color = GIDCyan, style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
             }
         }
     }
 
     // ── Dialogs ──────────────────────────────────────────────────────────────
+    if (categoriesOpen) {
+        CategoriesDialog(
+            categories = categories,
+            onAdd      = viewModel::addCategory,
+            onRename   = viewModel::renameCategory,
+            onRemove   = viewModel::removeCategory,
+            onDismiss  = { categoriesOpen = false },
+        )
+    }
     if (renameOpen) NameDialog(stringResource(R.string.subject_rename), initial = current.name, onDismiss = { renameOpen = false }) { viewModel.rename(it) }
     if (addHeadingOpen) NameDialog(stringResource(R.string.sort_new_heading), onDismiss = { addHeadingOpen = false }) { viewModel.addHeading(it) }
     headings.firstOrNull { it.id == renamingHeadingId }?.let { h ->

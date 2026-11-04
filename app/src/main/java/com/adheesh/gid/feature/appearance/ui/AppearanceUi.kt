@@ -1,5 +1,10 @@
 package com.adheesh.gid.feature.appearance.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.core.graphics.scale
+import com.adheesh.gid.core.designsystem.BackdropColors
+import com.adheesh.gid.core.designsystem.DarkTextOnLight
+import com.adheesh.gid.feature.appearance.domain.BackdropContrast
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -145,6 +150,8 @@ fun Greeting(
     fontSize   : TextUnit,
     lineHeight : TextUnit,
     modifier   : Modifier = Modifier,
+    /** The colour of the 'White' option; on a wallpaper it follows the background. */
+    plainColor : Color = GIDText,
 ) {
     Text(
         text       = name?.let { stringResource(R.string.home_hello_name, it) } ?: stringResource(R.string.home_hello_there),
@@ -155,7 +162,7 @@ fun Greeting(
             lineHeight    = lineHeight,
             letterSpacing = if (appearance.font == NameFont.GID) (-0.5).sp else 0.sp,
         ),
-        color      = appearance.color.color,
+        color      = if (appearance.color == NameColor.TEXT) plainColor else appearance.color.color,
         maxLines   = 2,
         overflow   = TextOverflow.Ellipsis,
         modifier   = modifier,
@@ -164,21 +171,56 @@ fun Greeting(
 
 // ── Background photo behind the four main tabs ───────────────────────────────
 
+/** The decoded photo and its average colour, which decides the text colour over it. */
+class BackdropImage(val bitmap: ImageBitmap, val red: Int, val green: Int, val blue: Int)
+
+@Composable
+fun rememberBackdropImage(path: String?): BackdropImage? {
+    val image by produceState<BackdropImage?>(initialValue = null, path) {
+        value = path?.let { file -> withContext(Dispatchers.IO) { runCatching { decodeBackdrop(file) }.getOrNull() } }
+    }
+    return image
+}
+
+private fun decodeBackdrop(path: String): BackdropImage? {
+    val bitmap = BitmapFactory.decodeFile(path) ?: return null
+    // Shrinking to a few pixels averages the photo for us.
+    val tiny = bitmap.scale(AVERAGE_SIZE, AVERAGE_SIZE)
+    val pixels = IntArray(AVERAGE_SIZE * AVERAGE_SIZE)
+    tiny.getPixels(pixels, 0, AVERAGE_SIZE, 0, 0, AVERAGE_SIZE, AVERAGE_SIZE)
+    return BackdropImage(
+        bitmap = bitmap.asImageBitmap(),
+        red    = pixels.sumOf { (it shr 16) and 0xFF } / pixels.size,
+        green  = pixels.sumOf { (it shr 8) and 0xFF } / pixels.size,
+        blue   = pixels.sumOf { it and 0xFF } / pixels.size,
+    )
+}
+
+private const val AVERAGE_SIZE = 8
+
+/** Light text on a dark wallpaper, dark text on a light one; the plain background is dark. */
+@Composable
+fun backdropColors(image: BackdropImage?, dim: Float, photoShowing: Boolean): BackdropColors {
+    val useDark = photoShowing && image != null && BackdropContrast.prefersDarkText(image.red, image.green, image.blue, dim)
+    val target = if (useDark) DarkTextOnLight else BackdropColors()
+    val spec = tween<Color>(250)
+    return BackdropColors(
+        text    = animateColorAsState(target.text, spec, label = "backdropText").value,
+        muted   = animateColorAsState(target.muted, spec, label = "backdropMuted").value,
+        accent  = animateColorAsState(target.accent, spec, label = "backdropAccent").value,
+        outline = animateColorAsState(target.outline, spec, label = "backdropOutline").value,
+    )
+}
+
 /** The blurred photo with its dim layer; fades out where it must not show. */
 @Composable
-fun AppBackdrop(appearance: Appearance, visible: Boolean, modifier: Modifier = Modifier) {
-    val path = appearance.backgroundPath
-    val bitmap by produceState<ImageBitmap?>(initialValue = null, path) {
-        value = path?.let {
-            withContext(Dispatchers.IO) { runCatching { BitmapFactory.decodeFile(it)?.asImageBitmap() }.getOrNull() }
-        }
-    }
+fun AppBackdrop(backdrop: BackdropImage?, dim: Float, visible: Boolean, modifier: Modifier = Modifier) {
     val alpha by animateFloatAsState(
-        targetValue   = if (visible && bitmap != null) 1f else 0f,
+        targetValue   = if (visible && backdrop != null) 1f else 0f,
         animationSpec = tween(250),
         label         = "backdrop",
     )
-    val image = bitmap ?: return
+    val image = backdrop?.bitmap ?: return
     if (alpha == 0f) return
     Box(modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }) {
         Image(
@@ -187,7 +229,7 @@ fun AppBackdrop(appearance: Appearance, visible: Boolean, modifier: Modifier = M
             contentScale       = ContentScale.Crop,
             modifier           = Modifier.fillMaxSize(),
         )
-        Box(Modifier.fillMaxSize().background(GIDBackground.copy(alpha = appearance.backgroundDim)))
+        Box(Modifier.fillMaxSize().background(GIDBackground.copy(alpha = dim)))
     }
 }
 

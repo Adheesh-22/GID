@@ -27,7 +27,9 @@ enum class SessionSource { ALARM, TIMER, MANUAL }
 enum class SessionStatus { RUNNING, COMPLETED, CANCELLED }
 
 enum class CaptureKind {
-    PHOTO, LINK, TEXT, PDF;
+    PHOTO, LINK, TEXT, PDF,
+    /** A Word or PowerPoint file; mimeType says which. */
+    DOCUMENT;
 
     companion object {
         fun of(value: String): CaptureKind = entries.firstOrNull { it.name == value } ?: TEXT
@@ -54,12 +56,14 @@ enum class AttendanceStatus {
     }
 }
 
-enum class CaptureType {
-    EXAM_QUESTION, RESOURCE, NOTE, DEADLINE, IDEA, NOTICE;
-
-    companion object {
-        fun ofOrNull(value: String?): CaptureType? = entries.firstOrNull { it.name == value }
-    }
+/** The categories every install starts with; their names are the seeded ids (SPEC §2.8). */
+enum class CaptureType(val defaultName: String) {
+    EXAM_QUESTION("Exam question"),
+    RESOURCE("Resource"),
+    NOTE("Note"),
+    DEADLINE("Deadline"),
+    IDEA("Idea"),
+    NOTICE("Notice"),
 }
 
 enum class CaptureStatus { INBOX, SORTED, ARCHIVED }

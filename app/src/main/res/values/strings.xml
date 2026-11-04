@@ -58,7 +58,7 @@
     <string name="cd_capture">Capture something</string>
     <string name="cd_clear_selection">Clear selection</string>
     <string name="capture_camera">Camera</string>
-    <string name="capture_photo">Photo or PDF from phone</string>
+    <string name="capture_photo">Photo or file from phone</string>
     <string name="capture_paste">Paste a link or text</string>
     <string name="capture_paste_hint">Link or text</string>
     <string name="capture_saved">Saved to Inbox</string>
@@ -67,14 +67,9 @@
     <string name="capture_sort_now">Sort now</string>
     <string name="capture_untitled_photo">Photo</string>
     <string name="capture_untitled_pdf">PDF</string>
+    <string name="capture_untitled_document">Document</string>
     <string name="capture_untitled_text">Note</string>
 
-    <string name="type_exam_question">Exam question</string>
-    <string name="type_resource">Resource</string>
-    <string name="type_note">Note</string>
-    <string name="type_deadline">Deadline</string>
-    <string name="type_idea">Idea</string>
-    <string name="type_notice">Notice</string>
 
     <string name="sort_title">Sort</string>
     <plurals name="sort_title_many">
@@ -179,6 +174,7 @@
 
     <string name="capture_open_link">Open link</string>
     <string name="capture_open_pdf">Open PDF</string>
+    <string name="capture_open_document">Open file</string>
     <string name="capture_sort_again">Sort again</string>
     <string name="capture_delete_title">Delete this capture?</string>
     <string name="capture_delete_body">This can\'t be undone. The saved photo or PDF is deleted too.</string>
@@ -440,7 +436,7 @@
     <string name="settings_evening_title">Evening check-in</string>
     <string name="settings_evening_text">Reminder to update today\'s progress</string>
     <!-- Placeholder: replace with your real support address before sharing the app. -->
-    <string name="contact_email" translatable="false">YOUR_EMAIL</string>
+    <string name="contact_email" translatable="false">adhieshjain@gmail.com</string>
     <string name="contact_subject">GID feedback</string>
 
     <!-- Reliability -->
@@ -563,4 +559,73 @@
         <item quantity="one">and %1$d more on the Syllabus page</item>
         <item quantity="other">and %1$d more on the Syllabus page</item>
     </plurals>
+    <!-- Capture categories and subject tabs (SPEC §2.8) -->
+    <string name="category_manage">Categories</string>
+    <string name="category_new">New category</string>
+    <string name="category_rename">Rename category</string>
+    <string name="category_remove">Remove category</string>
+    <string name="category_remove_body">Items in %1$s stay in the All tab, with no category.</string>
+    <string name="subject_tab_all">All</string>
+    <string name="subject_tab_count">%1$s (%2$d)</string>
+    <string name="subject_tab_empty">Nothing in %1$s for this subject yet.</string>
+
+    <!-- Alarm options (SPEC §2.6) -->
+    <string name="alarm_ringtone">Ringtone</string>
+    <string name="alarm_ringtone_default">Phone default</string>
+    <string name="alarm_snooze_length">Snooze length</string>
+    <string name="alarm_require_pattern">Draw a pattern to stop</string>
+    <string name="alarm_require_pattern_hint">A random pattern each time, so you have to wake up to stop it.</string>
+    <string name="alarm_pattern_prompt">Draw this pattern to stop the alarm</string>
+    <string name="alarm_pattern_wrong">Not that one. Follow the numbers.</string>
+
+    <!-- VTOP import (SPEC §2.7) -->
+    <string name="vtop_title">Paste from VTOP</string>
+    <string name="vtop_hint">On VTOP open Time Table and pick the semester. Select the whole page, copy it, and paste it here. Times, rooms and course names come from the page.</string>
+    <string name="vtop_paste_clipboard">Paste what I copied</string>
+    <string name="vtop_field">VTOP Time Table page</string>
+    <plurals name="vtop_preview_classes">
+        <item quantity="one">%1$d class a week</item>
+        <item quantity="other">%1$d classes a week</item>
+    </plurals>
+    <plurals name="vtop_preview_courses">
+        <item quantity="one">%1$d course</item>
+        <item quantity="other">%1$d courses</item>
+    </plurals>
+    <string name="vtop_no_slot">No slot, so not added: %1$s</string>
+    <plurals name="vtop_replaces">
+        <item quantity="one">This replaces your %1$d current class. Past attendance is kept.</item>
+        <item quantity="other">This replaces your %1$d current classes. Past attendance is kept.</item>
+    </plurals>
+    <string name="vtop_not_found">Couldn\'t find the timetable grid. Copy the whole page, including the rows starting with THEORY and LAB.</string>
+    <string name="vtop_import">Use this timetable</string>
+
+    <!-- How to use GID (SPEC §2.5a) -->
+    <string name="help_title">How to use GID</string>
+    <string name="help_intro">Everything GID can do, one topic at a time. Tap a topic to read it. Your data stays on this phone; only your sign-up profile is online.</string>
+    <string name="help_home_title">Home</string>
+    <string name="help_home_body">Your day at a glance: the two-week calendar, what\'s next, today\'s attendance, your next alarm and classes, and today\'s tasks.\n\nTap a date to open it in Calendar. Tap your photo for Settings. Tap the greeting to personalise it.</string>
+    <string name="help_capture_title">Capturing notes and files</string>
+    <string name="help_capture_body">Save anything in about two seconds:\n\n• Share a photo, PDF, Word file, PowerPoint, link or text from any app and pick GID.\n• Tap + on Home or Library for Camera, Photo or Paste.\n• Add the GID widget to your home screen, or the capture tile to your pull-down shade.\n\nEverything lands in the Inbox, with a subject suggested from the class that was on at the time. The same file saved twice takes up space only once.</string>
+    <string name="help_library_title">Library, subjects and categories</string>
+    <string name="help_library_body">Tap an Inbox item to sort it: choose a category, a subject and, if you like, a heading.\n\nOpen a subject to see its tabs. All has everything, and each category has its own tab. Swipe or tap to move between them.\n\nThe tune icon by the tabs lets you add, rename or remove categories. Removing one keeps its items in All. Deadline can only be renamed, because it holds the due date.\n\nHold an Inbox item to select several at once. Search looks through titles, notes, links, subjects and headings.</string>
+    <string name="help_tasks_title">Tasks and Calendar</string>
+    <string name="help_tasks_body">Add tasks from Home or Calendar. Each has a date, optional time, priority and percent done.\n\nMove to tomorrow moves a task and keeps its progress. Hold a date in Calendar to mark it as a holiday, which also stops class reminders that day.</string>
+    <string name="help_timetable_title">Timetable</string>
+    <string name="help_timetable_body">Tap the Timetable card on Home.\n\nThe quick way: tap Change timetable, then Paste from VTOP. On VTOP open Time Table, pick the semester, select the whole page, copy it and paste it. GID builds every class with VTOP\'s exact times and rooms, and shows a preview first. Do the same at the start of each semester.\n\nYou can also add or edit classes by hand. Each class can remind you some minutes before it starts.</string>
+    <string name="help_attendance_title">Attendance</string>
+    <string name="help_attendance_body">When a class ends, a notification asks whether you were there: Present, Absent or Cancelled. You can also mark classes on Home. Cancelled classes never count.\n\nAttendance shows each subject\'s percent and tells you how many you can miss or must attend. Tap a subject to fix a mark, add classes from before you used GID, or set a target just for it. The usual target is in Settings.</string>
+    <string name="help_exams_title">Exams and assignments</string>
+    <string name="help_exams_body">Find them under Exams in Library, or tap Next up on Home. Add exams, tests, assignments and projects with a date, time and room.\n\nReminders come at 19:00 a week before (exams and tests), 19:00 the day before, and in the morning. An exam\'s page shows the topics left to cover and what you\'ve saved for that subject.</string>
+    <string name="help_syllabus_title">Syllabus</string>
+    <string name="help_syllabus_body">Open a subject, then its Syllabus card. Add units and topics and tick them off as you finish.\n\nPaste list saves typing: lines starting with Unit, Module or Chapter, or ending with a colon, become units, and every other line becomes a topic.\n\nWhen adding an exam, pick the units it covers to see progress for just those.</string>
+    <string name="help_alarms_title">Alarms, timers and sleep</string>
+    <string name="help_alarms_body">Tap the Alarm card on Home. Each alarm has its own time, repeat days, ringtone and snooze length (5 minutes unless you change it).\n\nDraw a pattern to stop is on by default. The ringing screen shows a random pattern with numbered dots, and the alarm stops only when you draw that same path on the grid below it. Snooze is still one tap. Turn the option off for any alarm to get a plain Dismiss button.\n\nSleep and nap alarms also track your sleep. Timers and activity types live in the same popup.</string>
+    <string name="help_history_title">History</string>
+    <string name="help_history_body">See any week\'s productivity, sleep and overall score, compared with the week before. Tap a bar for that day\'s details.</string>
+    <string name="help_look_title">Making it yours</string>
+    <string name="help_look_body">Tap the greeting on Home to change the name shown, its font and colour, and the background.\n\nA background photo is blurred on your phone and can be dimmed. It shows on Home, Calendar, Library and History.</string>
+    <string name="help_backup_title">Backup</string>
+    <string name="help_backup_body">Your data lives only on this phone, so export a backup now and then: Settings, then Export backup. It makes one .zip file that you keep wherever you like.\n\nImport backup on any phone brings it back and replaces what\'s there. Your Home look isn\'t included.</string>
+    <string name="help_reliability_title">If an alarm or reminder doesn\'t come</string>
+    <string name="help_reliability_body">Open Settings, then Reliability, and turn every row green.\n\nOn Xiaomi, Oppo, Vivo, Realme and Samsung phones, also open the app\'s info page and allow Autostart or No battery restrictions. Otherwise the phone may stop GID in the background.</string>
 </resources>

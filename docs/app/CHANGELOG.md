@@ -8,7 +8,43 @@ version when it's committed.
 
 ## Unreleased (not committed yet)
 
-### V1.4: Syllabus tracker
+### V1.5: Subject tabs, alarm pattern, VTOP import
+- **Library:** each subject opens with tabs: All, then one per category. Categories can be
+  added, renamed and removed (Deadline can only be renamed).
+- **Alarms:**
+  - a ringtone per alarm;
+  - snooze length per alarm, 5 minutes by default (it was fixed at 2);
+  - **Draw a pattern to stop:** a random 3×3 pattern, on by default.
+- **Timetable:** Paste from VTOP builds the whole timetable from VIT's Time Table page.
+- **Settings:**
+  - **How to use GID**, a guide to every feature;
+  - Contact us now fills in the To address (it held a placeholder).
+- **Home:** the month's name above the calendar strip.
+- **Library files:** Word and PowerPoint can be captured, by sharing or with the picker.
+- **Wallpaper text:** text with no card behind it turns dark on a light photo.
+- **Data safety:** removed the debug-only fallback that could wipe the database on a schema
+  problem.
+- **Database:** version 6 (automatic migration).
+
+Suggested commit message:
+```
+Add subject tabs, alarm pattern, VTOP timetable import and in-app guide
+
+Library: subject pages get All + per-category tabs; categories can be added,
+renamed and removed. Alarms: ringtone and snooze length per alarm (default 5
+min), random 3x3 pattern to stop. Timetable: paste VIT VTOP's page to build it
+with exact times. Settings: How to use GID page, Contact us fills in the To
+address. Home shows the month. Word and PowerPoint captures; text adapts to light
+wallpapers; no destructive migration in any build. Room v6 (seeds categories).
+```
+
+---
+
+## 3 Nov 2026
+
+### `95ecac6` V1.3 and V1.4: Attendance, Syllabus, app docs
+
+#### V1.4: Syllabus tracker
 - **Units and topics:** each subject gets units and topics you tick off, with a percent
   per unit and per subject.
 - **Syllabus page:**
@@ -21,7 +57,7 @@ version when it's committed.
 - **Database:** version 5 (automatic migration) adds the syllabus tables.
 - **Docs:** the `docs/app/` folder: FEATURES.md, ARCHITECTURE.md and this changelog.
 
-### V1.3: Attendance and no duplicate files
+#### V1.3: Attendance and no duplicate files
 - **After-class notification:** "Were you in …?" with Present / Absent / Cancelled
   buttons.
 - **Home:** "Attendance today" buttons.
@@ -34,19 +70,6 @@ version when it's committed.
   stored once and deleted only when no capture uses it. Settings shows how much space
   Library files use.
 - **Database:** version 4 (automatic migration).
-
-Suggested commit message for both:
-```
-Add attendance tracker, syllabus tracker and app docs
-
-Attendance: after-class Present/Absent/Cancelled notification, Home marking,
-Attendance page with percent vs target and can-miss/must-attend advice,
-'before GID' counts, per-subject and Settings targets.
-Syllabus: units and topics per subject, paste a syllabus, exams cover chosen
-units with progress on the exam page and Home.
-Captured files are fingerprinted so duplicates share one copy; Settings shows
-Library storage. Room v5 (auto-migrations 3->4->5). New docs/app folder.
-```
 
 ---
 

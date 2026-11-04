@@ -36,6 +36,32 @@ data class Appearance(
     }
 }
 
+// ── Which text colour is readable on the wallpaper (SPEC §2.2) ───────────────
+object BackdropContrast {
+
+    /** Dark text when it stands out more than light text on the dimmed photo. */
+    fun prefersDarkText(red: Int, green: Int, blue: Int, dim: Float): Boolean {
+        val keep = 1f - dim.coerceIn(0f, 1f)
+        // The dim layer is the near-black page colour (#161618) over the photo.
+        val shown = luminance(red * keep + 0x16 * dim, green * keep + 0x16 * dim, blue * keep + 0x18 * dim)
+        val againstDark  = (shown + 0.05) / (DARK_TEXT + 0.05)
+        val againstLight = (LIGHT_TEXT + 0.05) / (shown + 0.05)
+        return againstDark > againstLight
+    }
+
+    private val DARK_TEXT  = luminance(0x16.toFloat(), 0x16.toFloat(), 0x18.toFloat())
+    private val LIGHT_TEXT = luminance(0xF4.toFloat(), 0xF3.toFloat(), 0xEE.toFloat())
+
+    /** WCAG relative luminance of a colour with 0–255 channels. */
+    private fun luminance(r: Float, g: Float, b: Float): Double =
+        0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+
+    private fun linear(channel: Float): Double {
+        val c = channel / 255.0
+        return if (c <= 0.03928) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4)
+    }
+}
+
 // ── Box blur ─────────────────────────────────────────────────────────────────
 // Three box blurs in a row look almost the same as a Gaussian blur and work on
 // every Android version (the built-in blur needs Android 12). Runs once, when

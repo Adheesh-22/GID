@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.library.viewmodel
 
+import com.adheesh.gid.feature.capture.data.CategoryRepository
 import androidx.lifecycle.viewModelScope
 import com.adheesh.gid.core.database.CaptureEntity
 import com.adheesh.gid.core.database.HeadingEntity
@@ -20,7 +21,8 @@ class CaptureDetailViewModel(
     private val captureId : String,
     captures              : CaptureRepository,
     subjects              : SubjectRepository,
-) : SortingViewModel(captures, subjects) {
+    categories            : CategoryRepository,
+) : SortingViewModel(captures, subjects, categories) {
 
     val capture: StateFlow<CaptureEntity?> = captures.observe(captureId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

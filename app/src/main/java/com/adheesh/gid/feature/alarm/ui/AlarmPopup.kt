@@ -1,5 +1,11 @@
 package com.adheesh.gid.feature.alarm.ui
 
+import android.app.Activity
+import android.media.RingtoneManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.IntentCompat
+import androidx.core.net.toUri
 import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
@@ -351,6 +357,22 @@ private fun AlarmEditorDialog(
     var mask       by rememberSaveable { mutableStateOf(initial?.repeatDaysMask ?: 0) }
     var sleepNow   by rememberSaveable { mutableStateOf(false) }
     var pickTime   by rememberSaveable { mutableStateOf(false) }
+    var ringtone   by rememberSaveable { mutableStateOf(initial?.ringtoneUri) }
+    var snooze     by rememberSaveable { mutableStateOf(initial?.snoozeMinutes ?: AlarmEntity.DEFAULT_SNOOZE_MINUTES) }
+    var usePattern by rememberSaveable { mutableStateOf(initial?.requirePattern ?: true) }
+
+    val context = LocalContext.current
+    val defaultTone = stringResource(R.string.alarm_ringtone_default)
+    val ringtoneName = remember(ringtone) {
+        ringtone?.let { uri -> runCatching { RingtoneManager.getRingtone(context, uri.toUri())?.getTitle(context) }.getOrNull() } ?: defaultTone
+    }
+    val pickRingtone = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val picked = result.data?.let { IntentCompat.getParcelableExtra(it, RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java) }
+            // The picker's 'Default' row means no tone of our own.
+            ringtone = picked?.takeIf { it != RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) }?.toString()
+        }
+    }
 
     val category = types.firstOrNull { it.id == typeId }?.let { ActivityCategory.of(it.category) }
     val isSleepType = category == ActivityCategory.SLEEP || category == ActivityCategory.NAP
@@ -382,6 +404,37 @@ private fun AlarmEditorDialog(
                         )
                     }
                 }
+                PickerField(stringResource(R.string.alarm_ringtone), ringtoneName) {
+                    pickRingtone.launch(
+                        Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                            .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                            .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                            .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                            .putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
+                            .putExtra(
+                                RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                                ringtone?.toUri() ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                            )
+                    )
+                }
+                Text(stringResource(R.string.alarm_snooze_length), style = MaterialTheme.typography.labelMedium, color = GIDMutedText)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    SNOOZE_CHOICES.forEach { minutes ->
+                        FilterChip(
+                            selected = snooze == minutes,
+                            onClick  = { snooze = minutes },
+                            label    = { Text(stringResource(R.string.minutes_short, minutes)) },
+                            colors   = FilterChipDefaults.filterChipColors(selectedContainerColor = GIDPeriwinkle, selectedLabelColor = OnCard, labelColor = GIDText),
+                        )
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.alarm_require_pattern), color = GIDText)
+                        Text(stringResource(R.string.alarm_require_pattern_hint), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
+                    }
+                    Switch(checked = usePattern, onCheckedChange = { usePattern = it }, colors = SwitchDefaults.colors(checkedTrackColor = GIDPeriwinkle, checkedThumbColor = OnCard))
+                }
                 if (isSleepType) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
@@ -405,7 +458,14 @@ private fun AlarmEditorDialog(
                 enabled = typeId != null,
                 onClick = {
                     val type = typeId ?: return@TextButton
-                    onSave(initial, AlarmDraft(label, type, minutes / 60, minutes % 60, mask, enabled = true, startSleepNow = sleepNow && isSleepType))
+                    onSave(
+                        initial,
+                        AlarmDraft(
+                            label, type, minutes / 60, minutes % 60, mask, enabled = true,
+                            ringtoneUri = ringtone, snoozeMinutes = snooze, requirePattern = usePattern,
+                            startSleepNow = sleepNow && isSleepType,
+                        ),
+                    )
                 },
             ) { Text(stringResource(R.string.action_save), color = GIDCyan) }
         },
@@ -416,6 +476,8 @@ private fun AlarmEditorDialog(
         GIDTimePickerDialog(initialMinutes = minutes, onDismiss = { pickTime = false }, onPicked = { minutes = it })
     }
 }
+
+private val SNOOZE_CHOICES = listOf(1, 2, 5, 10, 15, 30)
 
 // ── Activity types manager ───────────────────────────────────────────────────
 @Composable

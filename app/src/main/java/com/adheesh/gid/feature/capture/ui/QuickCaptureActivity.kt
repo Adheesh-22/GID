@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.capture.ui
 
+import com.adheesh.gid.feature.capture.domain.CaptureFileTypes
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.ClipboardManager
@@ -156,7 +157,7 @@ class QuickCaptureActivity : ComponentActivity() {
 
     private fun startPicker() {
         step = Step.WAITING
-        try { documents.launch(arrayOf("image/*", "application/pdf")) } catch (_: ActivityNotFoundException) { showFailed() }
+        try { documents.launch(CaptureFileTypes.PICKABLE) } catch (_: ActivityNotFoundException) { showFailed() }
     }
 
     private fun savePaste() {

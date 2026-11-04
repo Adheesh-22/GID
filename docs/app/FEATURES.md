@@ -20,9 +20,10 @@ There is no AI and no analytics.
   - the name shown on Home (it changes only the greeting, not your profile);
   - its font (GID, DM Sans, Serif, Mono, Script, Light) and colour;
   - a background photo, blurred on the phone, with a Dim slider. It shows only on Home,
-    Calendar, Library and History.
-- **Two-week calendar strip:** this week and next, with task dots and holidays. Tap a date
-  → Calendar on that date.
+    Calendar, Library and History. Text over it turns dark on a light photo and light on a
+    dark one.
+- **Two-week calendar strip:** headed by the month's name; this week and next, with task
+  dots and holidays. Tap a date → Calendar on that date.
 - **Inbox row:** how many captures still need sorting, plus a quick-capture button.
 - **Next up:** the next exam or assignment with its countdown, and "N% syllabus" when its
   subject has a syllabus. Tap → Exams.
@@ -42,7 +43,7 @@ There is no AI and no analytics.
 
 ## Library (Capture Inbox)
 - **Capture from anywhere:**
-  - the share sheet in any app (photos, PDFs, links, text);
+  - the share sheet in any app (photos, PDFs, Word and PowerPoint files, links, text);
   - the + button: Camera, Photo, Paste;
   - the home-screen widget or the Quick Settings tile.
 - **Subject suggestion:** GID suggests a subject from the class that was on when the
@@ -50,17 +51,23 @@ There is no AI and no analytics.
 - **Inbox:**
   - shows unsorted items, with a delete button on each;
   - long-press to select several, then Sort or Delete them all at once.
-- **Sort sheet:** pick a type (Exam question, Resource, Note, Deadline, Idea, Notice), a
-  subject, a heading, a title and a note. A Deadline can also create a Task, an Exam or an
-  Assignment.
+- **Sort sheet:** pick a category, a subject, a heading, a title and a note. A Deadline can
+  also create a Task, an Exam or an Assignment.
+- **Categories:** Exam question, Resource, Note, Deadline, Idea and Notice to start with.
+  - Add, rename or remove them (tune icon on a subject page, or "New category" in the Sort
+    sheet).
+  - Removing one keeps its items under All. Deadline can only be renamed, because it holds
+    the due date.
 - **Subjects:**
   - add, archive, restore and delete;
-  - each subject has its own page with headings (add, rename, reorder, delete).
+  - each subject's page has tabs: **All** first, then one per category with its count.
+    Swipe or tap between them;
+  - headings: add, rename, reorder, delete.
 - **Search:** searches titles, notes, links, subjects and headings.
 - **Files and duplicates:**
   - files are copied into GID (they keep working if the original is moved or deleted);
   - capturing the same file again reuses the copy GID already has.
-- **Item page:** opens the photo, PDF or link. From there you can sort it again or delete it.
+- **Item page:** opens the photo, PDF, Word or PowerPoint file (in another app), or link. From there you can sort it again or delete it.
 
 ## Exams and assignments
 - **Exams page:** upcoming exams, tests, assignments and projects, soonest first. Past
@@ -128,24 +135,34 @@ There is no AI and no analytics.
   - your Home look (name, font, colour, background) isn't included.
 - **Reliability checklist:** exact alarms, notifications, battery optimisation, and the
   capture tile.
+- **How to use GID:** a guide to every feature.
+- **Contact us:** opens your mail app addressed to the developer.
 - Sign out.
 
 ## Alarm popup
 - Alarms with repeat days and an activity type, plus "Start sleep now" for sleep and nap
   types.
+- Each alarm has its own ringtone (from the phone's picker) and snooze length (1, 2, 5, 10,
+  15 or 30 minutes; 5 by default).
 - Timers, and the activity-types manager.
 - Ringing:
   - a full-screen alarm over the lock screen;
-  - snooze for 2 minutes.
+  - **Draw a pattern to stop** (on by default, per alarm): a random 5-dot pattern on a 3×3
+    grid, different every ring, has to be drawn to stop the alarm. The notification then
+    offers Snooze only;
+  - with the option off, a plain Dismiss button.
 
 ## Timetable popup
 - Your weekly classes (subject, time, room).
+- **Paste from VTOP:** paste VIT VTOP's whole Time Table page. GID builds the timetable with
+  the page's exact times, rooms and course names, and previews it first. Neighbouring lab
+  slots become one class. Past attendance is kept.
 - Edit mode to add, change or delete classes.
 - A reminder N minutes before each class (10 by default), skipped on holidays.
 
 ## Motion
 - Tabs slide sideways in bottom-bar order.
-- Pages (Exams, Attendance, Syllabus, subject and capture pages) and the Alarm and
+- Pages (Exams, Attendance, Syllabus, Help, subject and capture pages) and the Alarm and
   Timetable popups slide up from the bottom, and slide back down on Back.
 
 ## Notifications

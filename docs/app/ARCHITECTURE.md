@@ -85,7 +85,7 @@ com.adheesh.gid
 - **Tabs:** Home, Calendar, Library, History, Settings.
 - **Pages:**
   - Exams, ExamDetail, SubjectDetail, CaptureDetail;
-  - Attendance, Syllabus, Debug.
+  - Attendance, Syllabus, Help, Debug.
 - **`NavTransitions.kt`:** every entry is tagged with metadata, either a tab with its
   index or a page.
   - Tab to tab slides sideways, in the direction of the index.
@@ -95,8 +95,10 @@ com.adheesh.gid
   the dialog window.
 - **Background photo:** `AppBackdrop` sits behind the Scaffold. It fades in only on the
   four photo tabs. Pages and Settings are wrapped in an opaque `Page {}`.
+- **Text over the photo:** `BackdropContrast` compares the photo's average colour after
+  dimming, and `LocalBackdropColors` gives the result to text with no card behind it.
 
-## Data: Room (`GIDDatabase`, version 5)
+## Data: Room (`GIDDatabase`, version 6)
 
 | Entity | What it holds |
 | --- | --- |
@@ -104,12 +106,13 @@ com.adheesh.gid
 | TimetableEntry | class: subject, subjectId, day, start/end, room, reminder minutes, enabled |
 | Holiday | date, name |
 | ActivityType | name, colour, category (SLEEP, NAP, FOCUS, CLASS, FREE, OTHER) |
-| Alarm | time, repeat days, type, enabled |
+| Alarm | time, repeat days, type, enabled, ringtoneUri, snoozeMinutes, requirePattern |
 | ActivitySession | sleep, focus and other sessions with start/end and status |
 | LocalProfile | local copy of the cloud profile, needsSync |
 | Subject | name, nameKey (unique), colour, archived, attendanceTarget, priorPresent/Total |
 | Heading | sections inside a subject |
 | Capture (+ CaptureFts) | photo, link, text or PDF; type, status, subject, heading, filePath, contentHash; full-text search |
+| CaptureCategory | editable categories; Capture.type holds a category id, and defaults use their old type name as id |
 | Exam | exam, test, assignment or project per subject; date, time, room, completedAt |
 | Attendance | one class on one date: PRESENT, ABSENT or CANCELLED (unique per class, date and start) |
 | SyllabusUnit / SyllabusTopic | units and topics per subject; doneAt on topics |
@@ -126,8 +129,10 @@ as strings and dates as epoch days.
 - 3 → 4: the attendance table, attendance columns on subjects, and `contentHash` on
   captures.
 - 4 → 5: the syllabus units, topics and exam-unit links.
+- 5 → 6: capture categories and the alarm options. A hook seeds the default categories, and
+  a `RoomDatabase.Callback` does the same on a fresh install.
 
-Debug builds may drop the database when the schema changes; release builds never do.
+No build may drop the database on a schema change: a missing migration fails loudly instead.
 
 ## Data: DataStore (`GIDPreferences`)
 These are small settings only, kept outside Room.
@@ -170,6 +175,13 @@ These are small settings only, kept outside Room.
 - **Notification channels:** alarms, timers, class reminders, sessions, evening prompt,
   exam reminders, attendance. The `Notifications` object owns the ids and the builders.
 
+## Alarm ringing
+- `AlarmRingService` reads the alarm, plays its ringtone (falling back to the phone's
+  default if that tone is gone) and owns the sound.
+- `AlarmRingActivity` shows the ringing screen. When `requirePattern` is on it uses
+  `AlarmPattern` to make a random path, shows it with `PatternTarget` and checks the drawing
+  from `PatternInput`. The notification drops its Dismiss action, so the shade can't skip it.
+
 ## Capture entry points
 - **`ShareReceiverActivity`:** the share sheet. It's a see-through activity that shows a
   "Saved to Inbox" card.
@@ -204,6 +216,8 @@ These are plain Kotlin with no Android code:
 - ScoreCalculator, SessionCalculator, SessionRules, TaskRules;
 - AlarmTimeCalculator, ReminderPlanner, HistoryCalculator, AgeCalculator;
 - CaptureTimeResolver, SubjectSuggester, LinkExtractor, ContentHash;
+- CaptureFileTypes, BackdropContrast;
+- VtopParser (checked against real Fall and Winter VTOP grids), AlarmPattern;
 - ExamReminderPlanner, Countdown;
 - Appearance and BoxBlur;
 - AttendanceMath, AttendancePromptPlanner;

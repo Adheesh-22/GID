@@ -1,5 +1,9 @@
 package com.adheesh.gid.feature.library.ui
 
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Slideshow
+import com.adheesh.gid.feature.capture.domain.CaptureFileTypes
+import androidx.compose.runtime.compositionLocalOf
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -54,7 +58,6 @@ import coil3.compose.AsyncImage
 import com.adheesh.gid.R
 import com.adheesh.gid.core.database.CaptureEntity
 import com.adheesh.gid.core.database.CaptureKind
-import com.adheesh.gid.core.database.CaptureType
 import com.adheesh.gid.core.database.SubjectEntity
 import com.adheesh.gid.core.designsystem.ActivityTypePalette
 import com.adheesh.gid.core.designsystem.Dot
@@ -76,17 +79,8 @@ import java.io.File
 
 // ── Small pieces shared by the Library screens, Home and the share dialog ────
 
-@Composable
-fun CaptureType.label(): String = stringResource(
-    when (this) {
-        CaptureType.EXAM_QUESTION -> R.string.type_exam_question
-        CaptureType.RESOURCE      -> R.string.type_resource
-        CaptureType.NOTE          -> R.string.type_note
-        CaptureType.DEADLINE      -> R.string.type_deadline
-        CaptureType.IDEA          -> R.string.type_idea
-        CaptureType.NOTICE        -> R.string.type_notice
-    }
-)
+/** Category id to name, provided once by the nav host so every capture row can read it. */
+val LocalCategoryNames = compositionLocalOf<Map<String, String>> { emptyMap() }
 
 /** A subject's own color, or a steady pick from the palette so it never changes between screens. */
 fun SubjectEntity.color(): Color =
@@ -101,6 +95,7 @@ fun CaptureEntity.displayTitle(): String = title.ifBlank {
             when (CaptureKind.of(kind)) {
                 CaptureKind.PHOTO -> R.string.capture_untitled_photo
                 CaptureKind.PDF   -> R.string.capture_untitled_pdf
+                CaptureKind.DOCUMENT -> R.string.capture_untitled_document
                 else              -> R.string.capture_untitled_text
             }
         )
@@ -127,6 +122,8 @@ fun CaptureThumb(capture: CaptureEntity, size: Dp, modifier: Modifier = Modifier
             val icon: ImageVector = when (kind) {
                 CaptureKind.LINK -> Icons.Rounded.Link
                 CaptureKind.PDF  -> Icons.Rounded.PictureAsPdf
+                CaptureKind.DOCUMENT ->
+                    if (CaptureFileTypes.isPowerPoint(capture.mimeType)) Icons.Rounded.Slideshow else Icons.Rounded.Description
                 else             -> Icons.AutoMirrored.Rounded.Notes
             }
             Icon(icon, contentDescription = null, tint = GIDCyan)
@@ -146,7 +143,7 @@ fun CaptureRow(
     onLongClick : (() -> Unit)? = null,
     onDelete    : (() -> Unit)? = null,
 ) {
-    val type = CaptureType.ofOrNull(capture.type)
+    val type = capture.type?.let { LocalCategoryNames.current[it] }
     val subject = (capture.subjectId ?: capture.suggestedSubjectId)?.let { subjectById[it] }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -170,7 +167,7 @@ fun CaptureRow(
             )
             Text(capture.whenText(), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (type != null) SmallChip(type.label(), GIDSurfaceHigh, GIDText)
+                if (type != null) SmallChip(type, GIDSurfaceHigh, GIDText)
                 if (subject != null) {
                     val isSuggestion = capture.subjectId == null
                     SmallChip(
@@ -241,7 +238,7 @@ fun CaptureButton(
             }
             CaptureMenuItem(Icons.Rounded.PhotoLibrary, stringResource(R.string.capture_photo)) {
                 menuOpen = false
-                documents.launch(arrayOf("image/*", "application/pdf"))
+                documents.launch(CaptureFileTypes.PICKABLE)
             }
             CaptureMenuItem(Icons.Rounded.ContentPaste, stringResource(R.string.capture_paste)) {
                 menuOpen = false

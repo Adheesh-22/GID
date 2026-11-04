@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.library.ui
 
+import com.adheesh.gid.core.designsystem.LocalBackdropColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,7 +53,6 @@ import com.adheesh.gid.core.designsystem.EmptyText
 import com.adheesh.gid.core.designsystem.GIDCoral
 import com.adheesh.gid.core.designsystem.GIDCyan
 import com.adheesh.gid.core.designsystem.GIDMutedText
-import com.adheesh.gid.core.designsystem.GIDPeriwinkle
 import com.adheesh.gid.core.designsystem.GIDSurface
 import com.adheesh.gid.core.designsystem.GIDText
 import com.adheesh.gid.core.designsystem.GIDTextField
@@ -81,6 +81,7 @@ fun LibraryScreen(
     val subjectList by viewModel.subjectList.collectAsState()
     val subjectById by viewModel.subjectById.collectAsState()
     val query       by viewModel.query.collectAsState()
+    val onWallpaper = LocalBackdropColors.current
     val results     by viewModel.results.collectAsState()
     val selection   by viewModel.selection.collectAsState()
     val archived    by viewModel.archivedSubjects.collectAsState()
@@ -106,11 +107,11 @@ fun LibraryScreen(
         ) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    ScreenTitle(stringResource(R.string.library_title), Modifier.weight(1f))
+                    ScreenTitle(stringResource(R.string.library_title), Modifier.weight(1f), color = onWallpaper.text)
                     TextButton(onClick = onOpenExams) {
-                        Icon(Icons.Rounded.Event, contentDescription = null, tint = GIDPeriwinkle)
+                        Icon(Icons.Rounded.Event, contentDescription = null, tint = onWallpaper.accent)
                         Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.exams_title), color = GIDText)
+                        Text(stringResource(R.string.exams_title), color = onWallpaper.text)
                     }
                 }
             }
@@ -119,9 +120,10 @@ fun LibraryScreen(
                     value         = query,
                     onValueChange = viewModel::setQuery,
                     label         = stringResource(R.string.library_search),
-                    leadingIcon   = { Icon(Icons.Rounded.Search, contentDescription = null, tint = GIDMutedText) },
+                    backdrop      = onWallpaper,
+                    leadingIcon   = { Icon(Icons.Rounded.Search, contentDescription = null, tint = onWallpaper.muted) },
                     trailingIcon  = if (query.isNotEmpty()) {
-                        { IconButton(onClick = { viewModel.setQuery("") }) { Icon(Icons.Rounded.Close, stringResource(R.string.action_clear), tint = GIDMutedText) } }
+                        { IconButton(onClick = { viewModel.setQuery("") }) { Icon(Icons.Rounded.Close, stringResource(R.string.action_clear), tint = onWallpaper.muted) } }
                     } else null,
                 )
             }
@@ -129,7 +131,7 @@ fun LibraryScreen(
             val found = results
             if (found != null) {
                 // ── Search results ───────────────────────────────────────────
-                if (found.isEmpty()) item { EmptyText(stringResource(R.string.library_no_results, query.trim())) }
+                if (found.isEmpty()) item { EmptyText(stringResource(R.string.library_no_results, query.trim()), color = onWallpaper.muted) }
                 items(found, key = { it.id }) { capture ->
                     CaptureRow(capture, subjectById, selected = false, onClick = { onOpenCapture(capture.id) })
                 }
@@ -137,14 +139,14 @@ fun LibraryScreen(
                 // ── Inbox ────────────────────────────────────────────────────
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                        SectionTitle(stringResource(R.string.library_inbox))
+                        SectionTitle(stringResource(R.string.library_inbox), color = onWallpaper.text)
                         Spacer(Modifier.width(10.dp))
                         if (inbox.isNotEmpty()) {
-                            Text(stringResource(R.string.library_inbox_count, inbox.size), color = GIDMutedText, style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.library_inbox_count, inbox.size), color = onWallpaper.muted, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
-                if (inbox.isEmpty()) item { EmptyText(stringResource(R.string.library_inbox_empty)) }
+                if (inbox.isEmpty()) item { EmptyText(stringResource(R.string.library_inbox_empty), color = onWallpaper.muted) }
                 items(inbox, key = { it.id }) { capture ->
                     val selecting = selection.isNotEmpty()
                     CaptureRow(
@@ -160,15 +162,15 @@ fun LibraryScreen(
                 // ── Subjects ─────────────────────────────────────────────────
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 16.dp)) {
-                        SectionTitle(stringResource(R.string.library_subjects), Modifier.weight(1f))
+                        SectionTitle(stringResource(R.string.library_subjects), Modifier.weight(1f), color = onWallpaper.text)
                         TextButton(onClick = { newSubjectOpen = true }) {
-                            Icon(Icons.Rounded.Add, contentDescription = null, tint = GIDCyan)
+                            Icon(Icons.Rounded.Add, contentDescription = null, tint = onWallpaper.accent)
                             Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.sort_new_subject), color = GIDCyan)
+                            Text(stringResource(R.string.sort_new_subject), color = onWallpaper.accent)
                         }
                     }
                 }
-                if (subjectList.isEmpty()) item { EmptyText(stringResource(R.string.library_subjects_empty)) }
+                if (subjectList.isEmpty()) item { EmptyText(stringResource(R.string.library_subjects_empty), color = onWallpaper.muted) }
                 items(subjectList, key = { it.subject.id }) { row ->
                     val subjectId = row.subject.id
                     SubjectRow(
@@ -186,7 +188,7 @@ fun LibraryScreen(
                 if (archived.isNotEmpty()) {
                     item {
                         TextButton(onClick = { showArchived = !showArchived }) {
-                            Text(stringResource(R.string.library_archived, archived.size), color = GIDMutedText)
+                            Text(stringResource(R.string.library_archived, archived.size), color = onWallpaper.muted)
                         }
                     }
                     if (showArchived) {

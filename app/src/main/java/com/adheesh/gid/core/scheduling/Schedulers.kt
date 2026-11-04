@@ -85,7 +85,7 @@ class AlarmScheduler(
         ExactAlarms.setAlarmClock(context, next.toInstant().toEpochMilli(), ringIntent(alarm.id, snooze = false))
     }
 
-    fun snooze(alarmId: String, minutes: Int = SNOOZE_MINUTES) {
+    fun snooze(alarmId: String, minutes: Int) {
         val at = System.currentTimeMillis() + minutes * 60_000L
         ExactAlarms.setAlarmClock(context, at, ringIntent(alarmId, snooze = true))
     }
@@ -104,10 +104,6 @@ class AlarmScheduler(
             .setAction(if (snooze) AlarmReceiver.ACTION_SNOOZE_RING else AlarmReceiver.ACTION_RING)
             .putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
         return PendingIntent.getBroadcast(context, alarmId.hashCode(), intent, PI_FLAGS)
-    }
-
-    companion object {
-        const val SNOOZE_MINUTES = 2
     }
 }
 

@@ -1,5 +1,7 @@
 package com.adheesh.gid.feature.library.viewmodel
 
+import com.adheesh.gid.core.database.CaptureCategoryEntity
+import com.adheesh.gid.feature.capture.data.CategoryRepository
 import com.adheesh.gid.feature.syllabus.data.SyllabusRepository
 import com.adheesh.gid.feature.syllabus.domain.SyllabusProgress
 import androidx.lifecycle.ViewModel
@@ -33,7 +35,16 @@ class SubjectDetailViewModel(
     exams                 : ExamRepository,
     attendance            : AttendanceRepository,
     syllabus              : SyllabusRepository,
+    private val categories : CategoryRepository,
 ) : ViewModel() {
+
+    /** One tab each, after All (SPEC §2.8). */
+    val allCategories: StateFlow<List<CaptureCategoryEntity>> = categories.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun addCategory(name: String) = launch { categories.add(name) }
+    fun renameCategory(category: CaptureCategoryEntity, name: String) = launch { categories.rename(category, name) }
+    fun removeCategory(category: CaptureCategoryEntity) = launch { categories.remove(category) }
 
     val syllabusProgress: StateFlow<SyllabusProgress> = syllabus.observeProgress(subjectId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyllabusProgress.EMPTY)

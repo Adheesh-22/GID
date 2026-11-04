@@ -19,16 +19,16 @@ The full product spec is in [docs/SPEC.md](docs/SPEC.md) and the coding rules ar
 | **Home** | A greeting and your photo, a two-week calendar strip, your next alarm, upcoming classes, and today's tasks (tick them off or add new ones). Tap the greeting to personalise it. |
 | **Personalise** | Change the name Home greets you with, its font (GID, DM Sans, Serif, Mono, Script, Light) and colour. Pick a background photo: GID blurs it on the phone, lets you dim it, and shows it only behind Home, Calendar, Library and History. |
 | **Calendar** | A month grid with task dots and holidays (long-press a date to mark one). Add, edit, delete, track percent done, change priority and move tasks to tomorrow. |
-| **Library** | The Capture Inbox. Share photos, links, text or PDFs to GID from any app (or tap +). GID suggests the subject from your timetable; you sort each item into a subject, heading and type. Search, subject pages, and a deadline can become a task. Files are copied into GID once; capturing the same file again reuses that copy. All on the phone. |
+| **Library** | Each subject opens with tabs: All, then one per category (add, rename or remove categories). The Capture Inbox. Share photos, links, text, PDFs, Word or PowerPoint files to GID from any app (or tap +). GID suggests the subject from your timetable; you sort each item into a subject, heading and category. Search, subject pages, and a deadline can become a task. Files are copied into GID once; capturing the same file again reuses that copy. All on the phone. |
 | **Exams** | Exams, tests, assignments and projects per subject, with countdowns, reminders (a week before, the evening before, the morning of) and the subject's saved Library items. Shown on Home ("Next up"), the Calendar and subject pages. |
 | **Attendance** | Mark each class Present, Absent or Cancelled, from the notification that appears when a class ends or from Home. The Attendance page shows each subject's percent against your target (75% by default, changeable in Settings or per subject) and says how many classes you can miss or must attend. Classes from before you used GID can be added. |
 | **Syllabus** | Units and topics per subject that you tick off, with percent per unit and subject. Paste a whole syllabus and GID splits it into units and topics. An exam can cover chosen units; its page and Home's Next up show progress for just those. |
 | **Widget & tile** | A home-screen widget (Camera, Photo, Paste, Inbox count, next exam) and a Quick Settings tile that opens a capture menu. |
 | **History** | Week by week: productivity bars, sleep bars and a weekly score with the change from last week. Tap a bar to see that day's details. |
-| **Settings** | Profile (photo stays on the phone), evening check-in time, attendance target, sign out, **Backup** export/import (one .zip you keep) with how much space Library files use, and the **Reliability** checklist. |
+| **Settings** | Profile (photo stays on the phone), evening check-in time, attendance target, a **How to use GID** guide, sign out, **Backup** export/import (one .zip you keep) with how much space Library files use, and the **Reliability** checklist. |
 | **Motion** | Tabs slide sideways in bottom-bar order. Full-screen pages (Exams, subject and capture pages) and the Alarm and Timetable popups slide up from the bottom and back down on Back. |
-| **Alarm popup** | Alarms with repeat days and an activity type, a "Start sleep now" option, timers, and the activity-types manager. |
-| **Timetable popup** | Your weekly classes, with reminders N minutes before each one (skipped on holidays). |
+| **Alarm popup** | Alarms with repeat days, an activity type, their own ringtone and snooze length, and a random pattern to draw to stop them, a "Start sleep now" option, timers, and the activity-types manager. |
+| **Timetable popup** | Your weekly classes, built by pasting VIT VTOP's Time Table page or by hand, with reminders N minutes before each one (skipped on holidays). |
 
 ## One-time setup
 
@@ -119,7 +119,8 @@ feature/<name>/  ui/ (Compose), viewmodel/ (StateFlow), data/ (repositories), do
   `SessionRules` (closing, the midnight rule, 16-hour auto-close), `TaskRules`,
   `AlarmTimeCalculator`, `ReminderPlanner`, `HistoryCalculator`, `AgeCalculator`,
   `ExamReminderPlanner`, `Countdown`, `Appearance`, `BoxBlur`, `AttendanceMath`,
-  `AttendancePromptPlanner`, `ContentHash`, `SyllabusParser` and `SyllabusProgress`.
+  `AttendancePromptPlanner`, `ContentHash`, `SyllabusParser`, `SyllabusProgress`, `VtopParser` and
+  `AlarmPattern`.
 - **Motion** lives in `app/NavTransitions.kt`: each nav entry is tagged as a tab (with its
   position) or a page, and one rule picks a sideways slide or a slide up/down.
 - **Offline first.** The signed-in account is cached in DataStore, so a saved session opens Home
@@ -144,4 +145,4 @@ Otherwise the phone may stop alarms while the app is closed.
 - Data lives only on the phone. Export a backup regularly (**Settings → Backup**); without
   one, uninstalling the app or losing the phone erases everything.
 - The backup does not include the Home look (name, font, colour, background photo).
-- The "Contact us" address is a placeholder (`contact_email` in `res/values/strings.xml`).
+- The "Contact us" address is `contact_email` in `res/values/strings.xml`.

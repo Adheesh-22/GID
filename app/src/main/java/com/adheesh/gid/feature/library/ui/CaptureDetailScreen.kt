@@ -43,7 +43,6 @@ import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.adheesh.gid.R
 import com.adheesh.gid.core.database.CaptureKind
-import com.adheesh.gid.core.database.CaptureType
 import com.adheesh.gid.core.designsystem.GIDCoral
 import com.adheesh.gid.core.designsystem.GIDCyan
 import com.adheesh.gid.core.designsystem.GIDMutedText
@@ -71,7 +70,7 @@ fun CaptureDetailScreen(
     var sortOpen   by rememberSaveable { mutableStateOf(false) }
     var deleteOpen by rememberSaveable { mutableStateOf(false) }
     val kind = CaptureKind.of(current.kind)
-    val type = CaptureType.ofOrNull(current.type)
+    val type = current.type?.let { LocalCategoryNames.current[it] }
     val subject = current.subjectId?.let { subjectById[it] }
 
     Column(
@@ -94,7 +93,7 @@ fun CaptureDetailScreen(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (type != null) SmallChip(type.label(), GIDSurfaceHigh, GIDText)
+            if (type != null) SmallChip(type, GIDSurfaceHigh, GIDText)
             if (subject != null) SmallChip(subject.name, subject.color(), OnCard)
             heading?.let { SmallChip(it.name, GIDSurfaceHigh, GIDText) }
         }
@@ -122,17 +121,17 @@ fun CaptureDetailScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.capture_open_link)) }
         }
-        if (kind == CaptureKind.PDF && current.filePath != null) {
+        if ((kind == CaptureKind.PDF || kind == CaptureKind.DOCUMENT) && current.filePath != null) {
             Button(
                 onClick  = {
                     val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", File(current.filePath))
-                    val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/pdf").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, current.mimeType).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     if (open(context, intent)) viewModel.markOpened()
                 },
                 shape    = CircleShape,
                 colors   = ButtonDefaults.buttonColors(containerColor = GIDCyan, contentColor = OnCard),
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(stringResource(R.string.capture_open_pdf)) }
+            ) { Text(stringResource(if (kind == CaptureKind.PDF) R.string.capture_open_pdf else R.string.capture_open_document)) }
         }
         OutlinedButton(onClick = { sortOpen = true }, shape = CircleShape, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.capture_sort_again), color = GIDCyan)

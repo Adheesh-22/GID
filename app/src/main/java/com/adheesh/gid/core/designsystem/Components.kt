@@ -65,11 +65,11 @@ import java.io.File
 
 /** Screen title: Space Grotesk, uppercase (SPEC §5). */
 @Composable
-fun ScreenTitle(text: String, modifier: Modifier = Modifier) {
+fun ScreenTitle(text: String, modifier: Modifier = Modifier, color: Color = GIDText) {
     Text(
         text     = text.uppercase(),
         style    = MaterialTheme.typography.displayLarge,
-        color    = GIDText,
+        color    = color,
         modifier = modifier,
     )
 }
@@ -190,7 +190,12 @@ fun GIDTextField(
     keyboardActions      : KeyboardActions = KeyboardActions.Default,
     leadingIcon          : (@Composable () -> Unit)? = null,
     trailingIcon         : (@Composable () -> Unit)? = null,
+    /** Set when the field sits straight on the wallpaper rather than on a card. */
+    backdrop             : BackdropColors? = null,
 ) {
+    val accent = backdrop?.accent ?: GIDCyan
+    val body   = backdrop?.text ?: GIDText
+    val muted  = backdrop?.muted ?: GIDMutedText
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         OutlinedTextField(
             value                = value,
@@ -208,16 +213,16 @@ fun GIDTextField(
             modifier             = Modifier.fillMaxWidth(),
             textStyle            = MaterialTheme.typography.bodyLarge,
             colors               = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor    = GIDCyan,
-                unfocusedBorderColor  = GIDSurfaceHigh,
+                focusedBorderColor    = accent,
+                unfocusedBorderColor  = backdrop?.outline ?: GIDSurfaceHigh,
                 disabledBorderColor   = GIDSurfaceHigh,
                 errorBorderColor      = Error,
-                focusedLabelColor     = GIDCyan,
-                unfocusedLabelColor   = GIDMutedText,
+                focusedLabelColor     = accent,
+                unfocusedLabelColor   = muted,
                 disabledLabelColor    = GIDMutedText,
-                cursorColor           = GIDCyan,
-                focusedTextColor      = GIDText,
-                unfocusedTextColor    = GIDText,
+                cursorColor           = accent,
+                focusedTextColor      = body,
+                unfocusedTextColor    = body,
                 disabledTextColor     = GIDMutedText,
             ),
             shape = MaterialTheme.shapes.small,

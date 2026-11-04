@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.history.ui
 
+import com.adheesh.gid.core.designsystem.LocalBackdropColors
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -81,17 +82,18 @@ fun HistoryScreen(viewModel: HistoryViewModel, modifier: Modifier = Modifier) {
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        ScreenTitle(stringResource(R.string.history_title))
+        val onWallpaper = LocalBackdropColors.current
+        ScreenTitle(stringResource(R.string.history_title), color = onWallpaper.text)
 
         // ── Week selector ────────────────────────────────────────────────────
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = viewModel::previousWeek) {
-                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.cd_previous_week), tint = GIDText)
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.cd_previous_week), tint = onWallpaper.text)
             }
             Text(
                 stringResource(R.string.history_week_range, weekStart.formatShort(), weekStart.plusDays(6).formatShort()),
                 style     = MaterialTheme.typography.titleMedium,
-                color     = GIDText,
+                color     = onWallpaper.text,
                 textAlign = TextAlign.Center,
                 modifier  = Modifier.weight(1f),
             )
@@ -99,7 +101,7 @@ fun HistoryScreen(viewModel: HistoryViewModel, modifier: Modifier = Modifier) {
                 Icon(
                     Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                     stringResource(R.string.cd_next_week),
-                    tint = if (isCurrent) GIDMutedText.copy(alpha = 0.4f) else GIDText,
+                    tint = if (isCurrent) onWallpaper.muted.copy(alpha = 0.4f) else onWallpaper.text,
                 )
             }
         }

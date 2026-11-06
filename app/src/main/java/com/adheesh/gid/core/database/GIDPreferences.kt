@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 // ── GID DataStore Preferences ─────────────────────────────────────────────────
@@ -46,6 +47,9 @@ class GIDPreferences(context: Context) {
         val BACKGROUND_PATH           = stringPreferencesKey("background_path")
         val BACKGROUND_DIM            = floatPreferencesKey("background_dim")
         val ATTENDANCE_TARGET         = intPreferencesKey("attendance_target")
+        // The semester on screen, and the one whose classes are running (SPEC §2.14).
+        val VIEWED_SEMESTER           = stringPreferencesKey("viewed_semester")
+        val RUNNING_SEMESTER          = stringPreferencesKey("running_semester")
         val SCHEDULED_ATTENDANCE_PROMPT_COUNT = intPreferencesKey("scheduled_attendance_prompt_count")
         val CAPTURE_HASHES_FILLED     = booleanPreferencesKey("capture_hashes_filled")
 
@@ -92,6 +96,11 @@ class GIDPreferences(context: Context) {
     val homeNameColor: Flow<String?> = dataStore.data.map { it[HOME_NAME_COLOR] }
     val backgroundPath: Flow<String?> = dataStore.data.map { it[BACKGROUND_PATH] }
     val backgroundDim: Flow<Float> = dataStore.data.map { it[BACKGROUND_DIM] ?: DEFAULT_BACKGROUND_DIM }
+
+    /** Null = every semester. */
+    val viewedSemesterId: Flow<String?> = dataStore.data.map { it[VIEWED_SEMESTER] }.distinctUntilChanged()
+    /** Null = not chosen yet, so every class counts. */
+    val runningSemesterId: Flow<String?> = dataStore.data.map { it[RUNNING_SEMESTER] }.distinctUntilChanged()
 
     val attendanceTarget: Flow<Int> = dataStore.data.map { it[ATTENDANCE_TARGET] ?: DEFAULT_ATTENDANCE_TARGET }
     val scheduledAttendancePromptCount: Flow<Int> = dataStore.data.map { it[SCHEDULED_ATTENDANCE_PROMPT_COUNT] ?: 0 }
@@ -161,6 +170,14 @@ class GIDPreferences(context: Context) {
 
     suspend fun setBackgroundDim(dim: Float) {
         dataStore.edit { it[BACKGROUND_DIM] = dim }
+    }
+
+    suspend fun setViewedSemester(id: String?) {
+        dataStore.edit { if (id == null) it.remove(VIEWED_SEMESTER) else it[VIEWED_SEMESTER] = id }
+    }
+
+    suspend fun setRunningSemester(id: String?) {
+        dataStore.edit { if (id == null) it.remove(RUNNING_SEMESTER) else it[RUNNING_SEMESTER] = id }
     }
 
     suspend fun setAttendanceTarget(percent: Int) {

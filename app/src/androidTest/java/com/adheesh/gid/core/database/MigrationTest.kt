@@ -160,4 +160,24 @@ class MigrationTest {
         }
         db.close()
     }
+
+    @Test
+    fun version7AddsSemestersAndMarksAndKeepsSubjects() {
+        helper.createDatabase(dbName, 6).use { db ->
+            db.execSQL("INSERT INTO subjects (id, name, nameKey, colorHex, archived, attendanceTarget, priorPresent, priorTotal, createdAt, updatedAt) VALUES ('s1', 'DBMS', 'dbms', NULL, 0, NULL, 0, 0, 0, 0)")
+        }
+
+        val db = helper.runMigrationsAndValidate(dbName, 7, true)
+
+        db.query("SELECT semesterId, name FROM subjects WHERE id = 's1'").use { c ->
+            c.moveToFirst()
+            assertEquals(true, c.isNull(0))
+            assertEquals("DBMS", c.getString(1))
+        }
+        db.execSQL("INSERT INTO semesters (id, name, sortKey, createdAt, updatedAt) VALUES ('f', 'Fall Semester 2026-27', 20261, 0, 0)")
+        // The same name is allowed again in another semester.
+        db.execSQL("INSERT INTO subjects (id, name, nameKey, colorHex, archived, semesterId, attendanceTarget, priorPresent, priorTotal, createdAt, updatedAt) VALUES ('s2', 'DBMS', 'dbms', NULL, 0, 'f', NULL, 0, 0, 0, 0)")
+        db.query("SELECT COUNT(*) FROM subjects").use { c -> c.moveToFirst(); assertEquals(2, c.getInt(0)) }
+        db.close()
+    }
 }

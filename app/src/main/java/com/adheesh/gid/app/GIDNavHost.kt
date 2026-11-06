@@ -1,5 +1,14 @@
 package com.adheesh.gid.app
 
+import com.adheesh.gid.core.database.ExamKind
+import com.adheesh.gid.feature.marks.ui.MarksDetailScreen
+import com.adheesh.gid.feature.marks.ui.MarksScreen
+import com.adheesh.gid.feature.marks.viewmodel.MarksDetailViewModel
+import com.adheesh.gid.feature.marks.viewmodel.MarksViewModel
+import com.adheesh.gid.feature.semesters.data.SemesterNames
+import com.adheesh.gid.feature.semesters.ui.LocalSemesterChip
+import com.adheesh.gid.feature.semesters.ui.SemesterChipState
+import com.adheesh.gid.feature.semesters.ui.SemesterSheet
 import android.app.Activity
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.luminance
@@ -184,6 +193,17 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
     var alarmsOpen    by rememberSaveable { mutableStateOf(false) }
     var timetableOpen by rememberSaveable { mutableStateOf(false) }
     val showPhoto = current in photoTabs && !alarmsOpen && !timetableOpen
+
+    // The semester in view, for the chip on each page (SPEC §2.14).
+    val semesters by container.semesterRepository.semesters.collectAsState(initial = emptyList())
+    val viewedSemester by container.semesterRepository.viewedId.collectAsState(initial = null)
+    val runningSemester by container.semesterRepository.runningId.collectAsState(initial = null)
+    var semesterSheetOpen by rememberSaveable { mutableStateOf(false) }
+    val allSemestersLabel = stringResource(R.string.semester_all)
+    val semesterChip = if (semesters.isEmpty()) null else SemesterChipState(
+        label   = semesters.firstOrNull { it.id == viewedSemester }?.let { SemesterNames.short(it.name) } ?: allSemestersLabel,
+        onClick = { semesterSheetOpen = true },
+    )
     val backdrop = rememberBackdropImage(appearance.backgroundPath)
     val wallpaperColors = backdropColors(backdrop, appearance.backgroundDim, showPhoto)
 
@@ -206,7 +226,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
     )
 
     Box(Modifier.fillMaxSize().background(GIDBackground)) {
-        CompositionLocalProvider(LocalCategoryNames provides categoryNames, LocalBackdropColors provides wallpaperColors) {
+        CompositionLocalProvider(LocalCategoryNames provides categoryNames, LocalBackdropColors provides wallpaperColors, LocalSemesterChip provides semesterChip) {
             AppBackdrop(backdrop, appearance.backgroundDim, visible = showPhoto)
             Scaffold(
                 containerColor = Color.Transparent,
@@ -264,7 +284,11 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                             }
                             val unsorted by container.captureRepository.observeInboxCount().collectAsState(initial = 0)
                             val upcomingExams by remember { container.examRepository.observeUpcoming() }.collectAsState(initial = emptyList())
-                            val nextExam = upcomingExams.firstOrNull()
+                            val nextExam = upcomingExams.firstOrNull { !ExamKind.of(it.kind).isSubmitted }
+                            val nextAssessment = upcomingExams.firstOrNull { ExamKind.of(it.kind).isSubmitted }
+                            val nextAssessmentSubject by remember(nextAssessment?.subjectId) {
+                                nextAssessment?.let { container.subjectRepository.observe(it.subjectId) } ?: flowOf(null)
+                            }.collectAsState(initial = null)
                             val nextExamSubject by remember(nextExam?.subjectId) {
                                 nextExam?.let { container.subjectRepository.observe(it.subjectId) } ?: flowOf(null)
                             }.collectAsState(initial = null)
@@ -288,6 +312,10 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                 nextExam        = nextExam,
                                 nextExamSubject = nextExamSubject,
                                 nextExamSyllabus = nextExamSyllabus,
+                                nextAssessment  = nextAssessment,
+                                nextAssessmentSubject = nextAssessmentSubject,
+                                onOpenAssessments = { backStack.add(Assessments) },
+                                onOpenMarks     = { backStack.add(Marks) },
                                 onOpenExams     = { backStack.add(Exams) },
                                 onOpenAttendance = { backStack.add(Attendance) },
                             )
@@ -312,6 +340,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                         container.classReminderScheduler,
                                         container.attendancePromptScheduler,
                                         container.preferences,
+                                        container.vtopImporter,
                                     )
                                 }
                                 TimetablePopup(timetableVm, onDismiss = { timetableOpen = false })
@@ -345,6 +374,8 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                 onOpenSubject  = { backStack.add(SubjectDetail(it)) },
                                 onOpenCapture  = { backStack.add(CaptureDetail(it)) },
                                 onOpenExams    = { backStack.add(Exams) },
+                                onOpenAssessments = { backStack.add(Assessments) },
+                                onOpenMarks    = { backStack.add(Marks) },
                                 requestedSort  = libraryRequest?.sortCaptureIds.orEmpty(),
                                 onRequestUsed  = { container.libraryRequest.value = null },
                             )
@@ -355,7 +386,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                 SubjectDetailViewModel(
                                     key.subjectId, container.captureRepository, container.subjectRepository,
                                     container.examRepository, container.attendanceRepository, container.syllabusRepository,
-                                    container.categoryRepository,
+                                    container.categoryRepository, container.semesterRepository,
                                 )
                             }
                             Page {
@@ -378,7 +409,7 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                         }
 
                         entry<Exams>(metadata = pageMetadata) {
-                            val vm = viewModel { ExamsViewModel(container.examRepository, container.subjectRepository, container.syllabusRepository) }
+                            val vm = viewModel { ExamsViewModel(container.examRepository, container.subjectRepository, container.syllabusRepository, assessments = false, container.vtopImporter) }
                             Page {
                                 ExamsScreen(
                                     viewModel  = vm,
@@ -403,6 +434,36 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                     onOpenSyllabus = { backStack.add(Syllabus(it)) },
                                 )
                             }
+                        }
+
+                        
+                        entry<Assessments>(metadata = pageMetadata) {
+                            val vm = viewModel(key = "assessments") {
+                                ExamsViewModel(container.examRepository, container.subjectRepository, container.syllabusRepository, assessments = true, container.vtopImporter)
+                            }
+                            Page {
+                                ExamsScreen(
+                                    viewModel  = vm,
+                                    onBack     = { backStack.removeAt(backStack.lastIndex) },
+                                    onOpenExam = { backStack.add(ExamDetail(it)) },
+                                )
+                            }
+                        }
+
+                        entry<Marks>(metadata = pageMetadata) {
+                            val vm = viewModel { MarksViewModel(container.marksRepository, container.vtopImporter) }
+                            Page {
+                                MarksScreen(
+                                    viewModel     = vm,
+                                    onBack        = { backStack.removeAt(backStack.lastIndex) },
+                                    onOpenSubject = { backStack.add(MarksDetail(it)) },
+                                )
+                            }
+                        }
+
+                        entry<MarksDetail>(metadata = pageMetadata) { key ->
+                            val vm = viewModel(key = "marks-${key.subjectId}") { MarksDetailViewModel(key.subjectId, container.marksRepository) }
+                            Page { MarksDetailScreen(viewModel = vm, onBack = { backStack.removeAt(backStack.lastIndex) }) }
                         }
 
                         entry<Help>(metadata = pageMetadata) {
@@ -454,6 +515,21 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
     }
 
     // ── App-wide dialogs ─────────────────────────────────────────────────────
+    if (semesterSheetOpen) {
+        SemesterSheet(
+            semesters = semesters,
+            viewedId  = viewedSemester,
+            runningId = runningSemester,
+            onView    = { id ->
+                scope.launch { container.semesterRepository.view(id) }
+                semesterSheetOpen = false
+            },
+            onRunning = { id -> scope.launch { container.setRunningSemester(id) } },
+            onAdd     = { name -> scope.launch { container.semesterRepository.view(container.semesterRepository.ensure(name).id) } },
+            onDismiss = { semesterSheetOpen = false },
+        )
+    }
+
     val progressRequested by openProgress.collectAsState()
     if (progressRequested && resolved.user != null) {
         val vm = viewModel(key = "progress") { ProgressViewModel(container.taskRepository, taskActions) }

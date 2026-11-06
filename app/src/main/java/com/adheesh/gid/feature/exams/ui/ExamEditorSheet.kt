@@ -68,11 +68,12 @@ fun ExamEditorSheet(
     initial          : ExamEntity?,
     onDismiss        : () -> Unit,
     presetSubjectId  : String? = null,
+    kinds            : List<ExamKind> = ExamKind.entries,
 ) {
     val subjects by viewModel.activeSubjects.collectAsState()
     val scope = rememberCoroutineScope()
 
-    var kind      by rememberSaveable { mutableStateOf(initial?.kind?.let { ExamKind.of(it) } ?: ExamKind.EXAM) }
+    var kind      by rememberSaveable { mutableStateOf(initial?.kind?.let { ExamKind.of(it) } ?: kinds.first()) }
     var subjectId by rememberSaveable { mutableStateOf(initial?.subjectId ?: presetSubjectId) }
     var title     by rememberSaveable { mutableStateOf(initial?.title.orEmpty()) }
     var day       by rememberSaveable { mutableStateOf(initial?.dateEpochDay) }
@@ -119,7 +120,7 @@ fun ExamEditorSheet(
 
             Label(stringResource(R.string.exam_kind))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ExamKind.entries.forEach { k -> Choice(k.label(), selected = kind == k) { kind = k } }
+                kinds.forEach { k -> Choice(k.label(), selected = kind == k) { kind = k } }
             }
 
             Label(stringResource(R.string.sort_subject))

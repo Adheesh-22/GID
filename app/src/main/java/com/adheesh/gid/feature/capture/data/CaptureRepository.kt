@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.capture.data
 
+import com.adheesh.gid.feature.timetable.data.TimetableRepository
 import com.adheesh.gid.feature.capture.domain.CaptureFileTypes
 import android.net.Uri
 import androidx.room.withTransaction
@@ -69,6 +70,7 @@ class CaptureRepositoryImpl(
     private val db    : GIDDatabase,
     private val files : CaptureFileStore,
     private val exams : ExamRepository,
+    private val timetable : TimetableRepository,
 ) : CaptureRepository {
 
     private val dao = db.captureDao()
@@ -218,7 +220,7 @@ class CaptureRepositoryImpl(
     private suspend fun suggestFor(capturedAt: Long): String? {
         val day = capturedAt.toLocalDate().toEpochDay()
         val holidays = db.holidayDao().getHolidayDaysBetween(day, day).toSet()
-        return SubjectSuggester.suggest(capturedAt.toLocalDateTime(), db.timetableDao().getAllEnabled(), holidays)
+        return SubjectSuggester.suggest(capturedAt.toLocalDateTime(), timetable.getAllEnabled(), holidays)
     }
 
     private suspend fun createDeadlineTask(capture: CaptureEntity, dueEpochDay: Long, now: Long): String {

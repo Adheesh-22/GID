@@ -33,8 +33,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SyllabusTopicEntity::class,
         ExamUnitEntity::class,
         CaptureCategoryEntity::class,
+        SemesterEntity::class,
+        MarkComponentEntity::class,
+        MarkEntryEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,   // saves schema JSON to app/schemas/ for migration diffing
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = GIDDatabase.SubjectsFromTimetable::class),
@@ -42,6 +45,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AutoMigration(from = 3, to = 4),   // attendance table, subject targets, capture hashes
         AutoMigration(from = 4, to = 5),   // syllabus units, topics and exam-unit links
         AutoMigration(from = 5, to = 6, spec = GIDDatabase.DefaultCategories::class),   // categories, alarm options
+        AutoMigration(from = 6, to = 7),   // semesters and marks
     ],
 )
 abstract class GIDDatabase : RoomDatabase() {
@@ -60,6 +64,8 @@ abstract class GIDDatabase : RoomDatabase() {
     abstract fun attendanceDao(): AttendanceDao
     abstract fun syllabusDao(): SyllabusDao
     abstract fun captureCategoryDao(): CaptureCategoryDao
+    abstract fun semesterDao(): SemesterDao
+    abstract fun marksDao(): MarksDao
 
     // ── Migration 1 → 2 ──────────────────────────────────────────────────────
     // Room diffs schemas/1.json against 2.json and writes the CREATE TABLE and

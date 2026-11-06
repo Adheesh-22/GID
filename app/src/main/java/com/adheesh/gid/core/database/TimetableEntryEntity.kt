@@ -18,6 +18,8 @@ data class TimetableEntryEntity(
     val room             : String?    = null,
     val reminderMinutes  : Int        = 10,
     val enabled          : Boolean    = true,
+    /** Null for classes saved before semesters: they count as part of any semester. */
+    val semesterId       : String?    = null,
     val createdAt        : Long,
     val updatedAt        : Long,
 )

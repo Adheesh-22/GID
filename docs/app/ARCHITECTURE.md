@@ -85,7 +85,7 @@ com.adheesh.gid
 - **Tabs:** Home, Calendar, Library, History, Settings.
 - **Pages:**
   - Exams, ExamDetail, SubjectDetail, CaptureDetail;
-  - Attendance, Syllabus, Help, Debug.
+  - Assessments, Marks, MarksDetail, Attendance, Syllabus, Help, Debug.
 - **`NavTransitions.kt`:** every entry is tagged with metadata, either a tab with its
   index or a page.
   - Tab to tab slides sideways, in the direction of the index.
@@ -98,7 +98,15 @@ com.adheesh.gid
 - **Text over the photo:** `BackdropContrast` compares the photo's average colour after
   dimming, and `LocalBackdropColors` gives the result to text with no card behind it.
 
-## Data: Room (`GIDDatabase`, version 6)
+## Semesters
+- `SemesterRepository` owns the semester list. `GIDPreferences` holds two ids: **viewed**
+  (what screens filter by) and **running** (whose classes drive reminders, prompts, Home's
+  class cards and subject suggestions).
+- Subjects, exams and the timetable filter inside their repositories, so screens need no
+  changes. Attendance, syllabus, marks and captures follow their subject.
+- `VtopImporter` turns pasted pages into a semester's subjects, classes, marks and assessments.
+
+## Data: Room (`GIDDatabase`, version 7)
 
 | Entity | What it holds |
 | --- | --- |
@@ -113,6 +121,8 @@ com.adheesh.gid
 | Heading | sections inside a subject |
 | Capture (+ CaptureFts) | photo, link, text or PDF; type, status, subject, heading, filePath, contentHash; full-text search |
 | CaptureCategory | editable categories; Capture.type holds a category id, and defaults use their old type name as id |
+| Semester | name, sortKey |
+| MarkComponent / MarkEntry | a subject's parts with credits and expectation; each uploaded mark |
 | Exam | exam, test, assignment or project per subject; date, time, room, completedAt |
 | Attendance | one class on one date: PRESENT, ABSENT or CANCELLED (unique per class, date and start) |
 | SyllabusUnit / SyllabusTopic | units and topics per subject; doneAt on topics |
@@ -129,6 +139,8 @@ as strings and dates as epoch days.
 - 3 → 4: the attendance table, attendance columns on subjects, and `contentHash` on
   captures.
 - 4 → 5: the syllabus units, topics and exam-unit links.
+- 6 → 7: semesters, marks, `Subject.semesterId` (unique with the name),
+  `TimetableEntry.semesterId`, `Exam.importKey`.
 - 5 → 6: capture categories and the alarm options. A hook seeds the default categories, and
   a `RoomDatabase.Callback` does the same on a fresh install.
 
@@ -221,7 +233,7 @@ These are plain Kotlin with no Android code:
 - ScoreCalculator, SessionCalculator, SessionRules, TaskRules;
 - AlarmTimeCalculator, ReminderPlanner, HistoryCalculator, AgeCalculator;
 - CaptureTimeResolver, SubjectSuggester, LinkExtractor, ContentHash;
-- CaptureFileTypes, BackdropContrast, PhotoCrop;
+- CaptureFileTypes, BackdropContrast, PhotoCrop, MarksMath, VtopMarksParser, VtopAssessmentParser;
 - VtopParser (checked against real Fall and Winter VTOP grids), AlarmPattern;
 - ExamReminderPlanner, Countdown;
 - Appearance and BoxBlur;

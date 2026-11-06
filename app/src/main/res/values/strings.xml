@@ -139,7 +139,6 @@
     <string name="tile_add_text">Capture from the pull-down shade</string>
     <string name="tile_add">Add tile</string>
     <string name="tile_added">Added</string>
-    <string name="home_next_up">Next up</string>
     <string name="home_nothing_due">Nothing due. Enjoy it.</string>
     <string name="channel_exams">Exam reminders</string>
     <string name="notif_exam_week">In 7 days. A good time to start revising.</string>
@@ -583,10 +582,6 @@
         <item quantity="other">%1$d courses</item>
     </plurals>
     <string name="vtop_no_slot">No slot, so not added: %1$s</string>
-    <plurals name="vtop_replaces">
-        <item quantity="one">This replaces your %1$d current class. Past attendance is kept.</item>
-        <item quantity="other">This replaces your %1$d current classes. Past attendance is kept.</item>
-    </plurals>
     <string name="vtop_not_found">Couldn\'t find the timetable grid. Copy the whole page, including the rows starting with THEORY and LAB.</string>
     <string name="vtop_import">Use this timetable</string>
 
@@ -602,11 +597,11 @@
     <string name="help_tasks_title">Tasks and Calendar</string>
     <string name="help_tasks_body">Add tasks from Home or Calendar. Each has a date, optional time, priority and percent done.\n\nMove to tomorrow moves a task and keeps its progress. Hold a date in Calendar to mark it as a holiday, which also stops class reminders that day.</string>
     <string name="help_timetable_title">Timetable</string>
-    <string name="help_timetable_body">Tap the Timetable card on Home.\n\nThe quick way: tap Change timetable, then Paste from VTOP. On VTOP open Time Table, pick the semester, select the whole page, copy it and paste it. GID builds every class with VTOP\'s exact times and rooms, and shows a preview first. Do the same at the start of each semester.\n\nYou can also add or edit classes by hand. Each class can remind you some minutes before it starts.</string>
+    <string name="help_timetable_body">Tap the Timetable card on Home.\n\nThe quick way: tap Change timetable, then Paste from VTOP. On VTOP open Time Table, pick the semester, select the whole page, copy it and paste it. GID builds every class with VTOP\'s exact times and rooms, and shows a preview first. Paste each semester\'s page once: its subjects and classes go into that semester, and the others are kept.\n\nYou can also add or edit classes by hand. Each class can remind you some minutes before it starts.</string>
     <string name="help_attendance_title">Attendance</string>
     <string name="help_attendance_body">When a class ends, a notification asks whether you were there: Present, Absent or Cancelled. You can also mark classes on Home. Cancelled classes never count.\n\nAttendance shows each subject\'s percent and tells you how many you can miss or must attend. Tap a subject to add classes from before you used GID, or set a target just for it. The usual target is in Settings.</string>
     <string name="help_exams_title">Exams and assignments</string>
-    <string name="help_exams_body">Find them under Exams in Library, or tap Next up on Home. Add exams, tests, assignments and projects with a date, time and room.\n\nReminders come at 19:00 a week before (exams and tests), 19:00 the day before, and in the morning. An exam\'s page shows the topics left to cover and what you\'ve saved for that subject.</string>
+    <string name="help_exams_body">Exams and assessments have their own pages: tap either card on Home, or find them at the top of Library. Exams holds exams and tests, Assessments holds assignments and projects. Add them with a date, time and room, or paste VTOP\'s Assignment Upload pages into Assessments.\n\nReminders come at 19:00 a week before (exams and tests), 19:00 the day before, and in the morning. An exam\'s page shows the topics left to cover and what you\'ve saved for that subject.</string>
     <string name="help_syllabus_title">Syllabus</string>
     <string name="help_syllabus_body">Open a subject, then its Syllabus card. Add units and topics and tick them off as you finish.\n\nPaste list saves typing: lines starting with Unit, Module or Chapter, or ending with a colon, become units, and every other line becomes a topic.\n\nWhen adding an exam, pick the units it covers to see progress for just those.</string>
     <string name="help_alarms_title">Alarms, timers and sleep</string>
@@ -633,4 +628,65 @@
     <string name="photo_crop_title">Adjust your photo</string>
     <string name="photo_crop_hint">Pinch to zoom and drag to move. The circle is what will show.</string>
     <string name="photo_crop_use">Use photo</string>
+    <!-- Semesters (SPEC §2.14) -->
+    <string name="semester_title">Semester</string>
+    <string name="semester_hint">Subjects, notes, exams, assessments, attendance and marks follow the semester you pick. Only the one marked Classes now sends class reminders.</string>
+    <string name="semester_running">Classes now</string>
+    <string name="semester_set_running">Set as now</string>
+    <string name="semester_all">All semesters</string>
+    <string name="semester_add">Add semester</string>
+    <string name="subject_move_semester">Move to semester</string>
+    <string name="subject_move_failed">That semester already has a subject with this name.</string>
+    <string name="vtop_replaces">This replaces that semester\'s classes. Other semesters and past attendance are kept.</string>
+    <string name="vtop_running">Classes running now</string>
+    <string name="vtop_running_hint">Use this semester\'s classes for reminders, attendance check-ins and Home.</string>
+
+    <!-- Next up, Assessments (SPEC §2.16) -->
+    <string name="home_next_exam">Next exam</string>
+    <string name="home_next_assessment">Next assessment</string>
+    <string name="assessments_title">Assessments</string>
+    <string name="assessments_short">Assessments</string>
+    <string name="assessments_empty">No assessments coming up. Tap + or paste them from VTOP.</string>
+    <string name="assessments_paste">Paste from VTOP</string>
+    <string name="assessments_paste_hint">On VTOP open a course\'s Assignment Upload page. Select the whole page, copy it, and paste it here. You can paste several courses together.</string>
+    <string name="assessments_paste_field">Assignment Upload page</string>
+    <string name="assessments_paste_not_found">Couldn\'t find any assessments. Copy the whole page of a course, including its table.</string>
+    <string name="assessments_paste_action">Add these</string>
+    <plurals name="assessments_preview">
+        <item quantity="one">%1$s: %2$d assessment</item>
+        <item quantity="other">%1$s: %2$d assessments</item>
+    </plurals>
+
+    <!-- Marks (SPEC §2.15) -->
+    <string name="marks_title">Marks</string>
+    <string name="marks_empty">Paste VTOP\'s Marks View page here. Paste the Time Table page too, so theory and lab are weighted by their credits.</string>
+    <string name="marks_paste">Paste from VTOP</string>
+    <string name="marks_paste_hint">On VTOP open Marks View and pick the semester. Select the whole page, copy it, and paste it here. Your expected marks are kept when you paste again.</string>
+    <string name="marks_paste_field">Marks View page</string>
+    <string name="marks_paste_not_found">Couldn\'t find any marks. Copy the whole page, including the tables.</string>
+    <string name="marks_paste_action">Use these marks</string>
+    <plurals name="marks_preview_courses">
+        <item quantity="one">%1$d course</item>
+        <item quantity="other">%1$d courses</item>
+    </plurals>
+    <plurals name="marks_preview_course">
+        <item quantity="one">%1$s (%2$s): %3$d mark</item>
+        <item quantity="other">%1$s (%2$s): %3$d marks</item>
+    </plurals>
+    <string name="marks_out_of_100">%1$s / 100</string>
+    <string name="marks_share">%1$s %2$d%%</string>
+    <string name="marks_total">Total with what you expect</string>
+    <string name="marks_uploaded_only">From uploaded marks alone: %1$s / 100</string>
+    <string name="marks_none_uploaded">Nothing uploaded yet.</string>
+    <string name="marks_uploaded">Uploaded</string>
+    <string name="marks_of">%1$s / %2$s</string>
+    <string name="marks_raw">Scored %1$s of %2$s</string>
+    <string name="marks_left">Left</string>
+    <string name="marks_expected">Expected, out of %1$s</string>
+    <string name="marks_part_total">Total for this part</string>
+    <string name="marks_credits">Credits</string>
+    <string name="help_marks_title">Marks</string>
+    <string name="help_marks_body">Open Marks from Home or Library, then Paste from VTOP with the Marks View page. Each subject gets its own page.\n\nFor each part (theory, lab) you see every mark, what\'s uploaded and what\'s left. Type what you expect from what\'s left, and the total out of 100 updates as you type.\n\nA subject\'s total follows credits: theory 3 and lab 1 is three quarters theory and one quarter lab, equal credits split evenly, and lab only is all lab. Credits come from the Time Table page, and you can change them.</string>
+    <string name="help_semesters_title">Semesters</string>
+    <string name="help_semesters_body">Paste each semester\'s Time Table page from VTOP. Subjects you already have move into the right semester by name, so your notes, exams, attendance and marks follow them.\n\nThe chip on Home, Library and other pages picks which semester you see. Looking at an old one changes nothing else. Only the semester marked Classes now sends class reminders and attendance check-ins. Reminders for upcoming exams and assessments work in any semester.\n\nA subject with no semester yet shows under all of them. Use its menu to move it.</string>
 </resources>

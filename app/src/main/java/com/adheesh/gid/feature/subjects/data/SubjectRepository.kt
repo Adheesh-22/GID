@@ -2,12 +2,16 @@ package com.adheesh.gid.feature.subjects.data
 
 import androidx.room.withTransaction
 import com.adheesh.gid.core.database.GIDDatabase
+import com.adheesh.gid.core.database.GIDPreferences
 import com.adheesh.gid.core.database.HeadingEntity
 import com.adheesh.gid.core.database.SubjectEntity
 import com.adheesh.gid.core.database.SubjectWithCount
 import com.adheesh.gid.core.util.newId
 import com.adheesh.gid.core.util.nowMillis
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 
 // ── Subjects and their headings (SPEC §2.8) ──────────────────────────────────
 interface SubjectRepository {
@@ -19,8 +23,12 @@ interface SubjectRepository {
     fun observe(id: String): Flow<SubjectEntity?>
     suspend fun get(id: String): SubjectEntity?
 
-    /** The subject with this name (case and spaces ignored), created if missing. */
+    /** The subject with this name (case and spaces ignored) in the semester in view, created if missing. */
     suspend fun ensure(name: String): SubjectEntity
+    /** Same, in a given semester. A same-named subject with no semester yet moves into it. */
+    suspend fun ensureIn(name: String, semesterId: String?): SubjectEntity
+    /** False if that semester already has a subject with this name. */
+    suspend fun moveToSemester(id: String, semesterId: String): Boolean
     suspend fun rename(id: String, name: String)
     suspend fun setColor(id: String, colorHex: String?)
     suspend fun setArchived(id: String, archived: Boolean)
@@ -35,29 +43,44 @@ interface SubjectRepository {
     suspend fun deleteHeading(id: String)
 }
 
-class SubjectRepositoryImpl(private val db: GIDDatabase) : SubjectRepository {
+@OptIn(ExperimentalCoroutinesApi::class)
+class SubjectRepositoryImpl(
+    private val db   : GIDDatabase,
+    private val prefs: GIDPreferences,
+) : SubjectRepository {
 
     private val subjects = db.subjectDao()
     private val headings = db.headingDao()
 
-    override fun observeActive()           = subjects.observeActive()
+    override fun observeActive()           = prefs.viewedSemesterId.flatMapLatest { subjects.observeActive(it) }
     override fun observeAll()              = subjects.observeAll()
-    override fun observeActiveWithCounts() = subjects.observeActiveWithCounts()
-    override fun observeArchived()         = subjects.observeArchived()
+    override fun observeActiveWithCounts() = prefs.viewedSemesterId.flatMapLatest { subjects.observeActiveWithCounts(it) }
+    override fun observeArchived()         = prefs.viewedSemesterId.flatMapLatest { subjects.observeArchived(it) }
     override fun observe(id: String)       = subjects.observe(id)
     override suspend fun get(id: String)   = subjects.get(id)
 
-    override suspend fun ensure(name: String): SubjectEntity = db.withTransaction {
+    override suspend fun ensure(name: String): SubjectEntity = ensureIn(name, prefs.viewedSemesterId.first())
+
+    override suspend fun ensureIn(name: String, semesterId: String?): SubjectEntity = db.withTransaction {
         val key = SubjectEntity.keyOf(name)
-        subjects.getByKey(key)?.let { existing ->
+        val existing = if (semesterId == null) subjects.getByKey(key)
+                       else subjects.getByKeyIn(key, semesterId) ?: subjects.getByKeyUnassigned(key)
+        if (existing != null) {
             // Using an archived subject again brings it back.
-            if (existing.archived) existing.copy(archived = false, updatedAt = nowMillis()).also { subjects.upsert(it) }
-            else existing
-        } ?: run {
+            val updated = existing.copy(archived = false, semesterId = semesterId ?: existing.semesterId)
+            if (updated != existing) updated.copy(updatedAt = nowMillis()).also { subjects.upsert(it) } else existing
+        } else {
             val now = nowMillis()
-            SubjectEntity(id = newId(), name = name.trim(), nameKey = key, createdAt = now, updatedAt = now)
+            SubjectEntity(id = newId(), name = name.trim(), nameKey = key, semesterId = semesterId, createdAt = now, updatedAt = now)
                 .also { subjects.upsert(it) }
         }
+    }
+
+    override suspend fun moveToSemester(id: String, semesterId: String): Boolean = db.withTransaction {
+        val subject = subjects.get(id) ?: return@withTransaction false
+        if (subjects.getByKeyIn(subject.nameKey, semesterId).let { it != null && it.id != id }) return@withTransaction false
+        subjects.upsert(subject.copy(semesterId = semesterId, updatedAt = nowMillis()))
+        true
     }
 
     override suspend fun rename(id: String, name: String) {
@@ -65,7 +88,8 @@ class SubjectRepositoryImpl(private val db: GIDDatabase) : SubjectRepository {
         val key = SubjectEntity.keyOf(name)
         if (key.isEmpty()) return
         // Another subject already has this name: keep both rather than silently merge.
-        if (key != subject.nameKey && subjects.getByKey(key) != null) return
+        val clash = subject.semesterId?.let { subjects.getByKeyIn(key, it) } ?: subjects.getByKeyUnassigned(key)
+        if (key != subject.nameKey && clash != null) return
         subjects.upsert(subject.copy(name = name.trim(), nameKey = key, updatedAt = nowMillis()))
     }
 
@@ -88,6 +112,8 @@ class SubjectRepositoryImpl(private val db: GIDDatabase) : SubjectRepository {
         headings.deleteForSubject(id)
         db.examDao().deleteForSubject(id)
         db.attendanceDao().deleteForSubject(id)
+        db.marksDao().deleteEntriesForSubject(id)
+        db.marksDao().deleteComponentsForSubject(id)
         db.syllabusDao().run {
             deleteLinksForSubject(id)
             deleteTopicsForSubject(id)

@@ -12,14 +12,18 @@ interface TimetableDao {
     @Query("SELECT * FROM timetable_entries ORDER BY dayOfWeek ASC, startMinutes ASC")
     fun observeAll(): Flow<List<TimetableEntryEntity>>
 
+    /** [sem] null = every semester. */
+    @Query("SELECT * FROM timetable_entries WHERE (:sem IS NULL OR semesterId IS NULL OR semesterId = :sem) ORDER BY dayOfWeek ASC, startMinutes ASC")
+    fun observeIn(sem: String?): Flow<List<TimetableEntryEntity>>
+
     @Query("SELECT * FROM timetable_entries WHERE dayOfWeek = :dayOfWeek AND enabled = 1 ORDER BY startMinutes ASC")
     fun observeForDay(dayOfWeek: Int): Flow<List<TimetableEntryEntity>>
 
     @Query("SELECT * FROM timetable_entries WHERE id = :id")
     suspend fun get(id: String): TimetableEntryEntity?
 
-    @Query("SELECT * FROM timetable_entries WHERE enabled = 1 ORDER BY dayOfWeek ASC, startMinutes ASC")
-    suspend fun getAllEnabled(): List<TimetableEntryEntity>
+    @Query("SELECT * FROM timetable_entries WHERE enabled = 1 AND (:sem IS NULL OR semesterId IS NULL OR semesterId = :sem) ORDER BY dayOfWeek ASC, startMinutes ASC")
+    suspend fun getEnabledIn(sem: String?): List<TimetableEntryEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entry: TimetableEntryEntity)
@@ -36,10 +40,18 @@ interface TimetableDao {
     @Query("DELETE FROM timetable_entries")
     suspend fun deleteAll()
 
-    /** All or nothing, so a failed import can't leave half a timetable. */
+    @Query("DELETE FROM timetable_entries WHERE semesterId = :sem")
+    suspend fun deleteIn(sem: String)
+
+    /** Classes from before semesters existed, if they are one of these courses. */
+    @Query("DELETE FROM timetable_entries WHERE semesterId IS NULL AND lower(trim(subject)) IN (:subjectKeys)")
+    suspend fun deleteUnassigned(subjectKeys: List<String>)
+
+    /** All or nothing, so a failed import can't leave half a timetable. Other semesters stay. */
     @Transaction
-    suspend fun replaceAll(entries: List<TimetableEntryEntity>) {
-        deleteAll()
+    suspend fun replaceSemester(sem: String, subjectKeys: List<String>, entries: List<TimetableEntryEntity>) {
+        deleteIn(sem)
+        deleteUnassigned(subjectKeys)
         upsertAll(entries)
     }
 }

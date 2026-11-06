@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.timetable.ui
 
+import com.adheesh.gid.feature.semesters.ui.LocalSemesterChip
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -67,6 +68,7 @@ fun TimetablePopup(viewModel: TimetableViewModel, onDismiss: () -> Unit) {
     val byDay    by viewModel.byDay.collectAsState()
     val editMode by viewModel.editMode.collectAsState()
     val defaultReminder by viewModel.defaultReminder.collectAsState()
+    val nothingRunning by viewModel.nothingRunning.collectAsState()
 
     var editorOpen by rememberSaveable { mutableStateOf(false) }
     var editingId  by rememberSaveable { mutableStateOf<String?>(null) }
@@ -87,6 +89,7 @@ fun TimetablePopup(viewModel: TimetableViewModel, onDismiss: () -> Unit) {
             Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            LocalSemesterChip.current?.let { Text(it.label, style = MaterialTheme.typography.labelLarge, color = GIDMutedText) }
             if (byDay.isEmpty()) EmptyText(stringResource(R.string.timetable_empty))
             if (byDay.isEmpty() || editMode) {
                 TextButton(onClick = { vtopOpen = true }) {
@@ -119,9 +122,9 @@ fun TimetablePopup(viewModel: TimetableViewModel, onDismiss: () -> Unit) {
 
     if (vtopOpen) {
         VtopImportSheet(
-            existingClasses = all.size,
-            onImport        = viewModel::importVtop,
-            onDismiss       = { vtopOpen = false },
+            runningByDefault = nothingRunning,
+            onImport         = { parsed, running -> viewModel.importVtop(parsed, running) },
+            onDismiss        = { vtopOpen = false },
         )
     }
 

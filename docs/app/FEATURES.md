@@ -69,7 +69,25 @@ There is no AI and no analytics.
   - capturing the same file again reuses the copy GID already has.
 - **Item page:** opens the photo, PDF, Word or PowerPoint file (in another app), or link. From there you can sort it again or delete it.
 
-## Exams and assignments
+## Semesters
+- Subjects, notes, exams, assessments, attendance, syllabus and marks all follow the
+  semester you pick from the chip on Home, Library and other pages.
+- Paste a VTOP Time Table page: its semester is created, your subjects move into it by name,
+  and other semesters' classes stay.
+- **Classes now** marks the semester whose classes send reminders and attendance check-ins.
+  Looking at another semester changes nothing.
+
+## Marks
+- **Marks page** (Home or Library): each subject's total out of 100. Paste VTOP's Marks View.
+- **Subject page:** every mark per part (theory, lab), what's uploaded and left, and an
+  Expected box that updates the total as you type.
+- **Weighting by credits:** theory 3 and lab 1 is 75-25, equal is 50-50, lab only is all lab.
+
+## Exams and assessments
+- Exams (exams, tests) and Assessments (assignments, projects) have separate pages, and Home
+  shows the next of each side by side.
+- **Paste from VTOP** on Assessments reads Assignment Upload pages: due dates, marks, and
+  whether the file is uploaded.
 - **Exams page:** upcoming exams, tests, assignments and projects, soonest first. Past
   and done ones are folded away below.
 - **Countdown chips:** coral for today or tomorrow, cyan within a week.

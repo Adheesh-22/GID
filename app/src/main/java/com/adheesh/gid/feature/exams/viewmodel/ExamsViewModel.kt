@@ -1,5 +1,8 @@
 package com.adheesh.gid.feature.exams.viewmodel
 
+import com.adheesh.gid.core.database.ExamKind
+import com.adheesh.gid.feature.marks.domain.VtopAssessmentCourse
+import com.adheesh.gid.feature.semesters.data.VtopImporter
 import com.adheesh.gid.core.database.SyllabusTopicEntity
 import com.adheesh.gid.feature.syllabus.data.ExamSyllabus
 import com.adheesh.gid.feature.syllabus.data.SyllabusRepository
@@ -60,14 +63,27 @@ open class ExamEditingViewModel(
 }
 
 // ── Exams page (SPEC §2.10) ──────────────────────────────────────────────────
-class ExamsViewModel(exams: ExamRepository, subjects: SubjectRepository, syllabus: SyllabusRepository) :
-    ExamEditingViewModel(exams, subjects, syllabus) {
+// One page for exams and tests, another for assignments and projects (SPEC §2.16).
+class ExamsViewModel(
+    exams                 : ExamRepository,
+    subjects              : SubjectRepository,
+    syllabus              : SyllabusRepository,
+    val assessments       : Boolean,
+    private val importer  : VtopImporter,
+) : ExamEditingViewModel(exams, subjects, syllabus) {
 
-    val upcoming: StateFlow<List<ExamEntity>> = exams.observeUpcoming()
+    private fun ExamEntity.belongsHere() = ExamKind.of(kind).isSubmitted == assessments
+
+    val upcoming: StateFlow<List<ExamEntity>> = exams.observeUpcoming().map { list -> list.filter { it.belongsHere() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val past: StateFlow<List<ExamEntity>> = exams.observePast()
+    val past: StateFlow<List<ExamEntity>> = exams.observePast().map { list -> list.filter { it.belongsHere() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun importAssessments(courses: List<VtopAssessmentCourse>) {
+        // Finishes even if the screen closes straight after.
+        viewModelScope.launch { withContext(NonCancellable) { importer.importAssessments(courses) } }
+    }
 }
 
 // ── One exam (SPEC §2.10) ────────────────────────────────────────────────────

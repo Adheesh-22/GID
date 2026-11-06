@@ -1,5 +1,8 @@
 package com.adheesh.gid.feature.library.ui
 
+import androidx.compose.material.icons.automirrored.rounded.Assignment
+import androidx.compose.material.icons.rounded.Grade
+import com.adheesh.gid.feature.semesters.ui.SemesterChip
 import com.adheesh.gid.core.designsystem.LocalBackdropColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -73,6 +76,8 @@ fun LibraryScreen(
     onOpenSubject  : (String) -> Unit,
     onOpenCapture  : (String) -> Unit,
     onOpenExams    : () -> Unit,
+    onOpenAssessments : () -> Unit,
+    onOpenMarks    : () -> Unit,
     modifier       : Modifier = Modifier,
     requestedSort  : List<String> = emptyList(),
     onRequestUsed  : () -> Unit = {},
@@ -108,10 +113,26 @@ fun LibraryScreen(
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ScreenTitle(stringResource(R.string.library_title), Modifier.weight(1f), color = onWallpaper.text)
+                    SemesterChip()
+                }
+            }
+            // Exams, Assessments and Marks each have their own page (SPEC §2.15, §2.16).
+            item {
+                Row {
                     TextButton(onClick = onOpenExams) {
                         Icon(Icons.Rounded.Event, contentDescription = null, tint = onWallpaper.accent)
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.exams_title), color = onWallpaper.text)
+                    }
+                    TextButton(onClick = onOpenAssessments) {
+                        Icon(Icons.AutoMirrored.Rounded.Assignment, contentDescription = null, tint = onWallpaper.accent)
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.assessments_short), color = onWallpaper.text)
+                    }
+                    TextButton(onClick = onOpenMarks) {
+                        Icon(Icons.Rounded.Grade, contentDescription = null, tint = onWallpaper.accent)
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.marks_title), color = onWallpaper.text)
                     }
                 }
             }

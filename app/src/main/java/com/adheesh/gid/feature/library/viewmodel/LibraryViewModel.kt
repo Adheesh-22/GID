@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.library.viewmodel
 
+import kotlinx.coroutines.flow.combine
 import com.adheesh.gid.core.database.CaptureCategoryEntity
 import com.adheesh.gid.feature.capture.data.CategoryRepository
 import androidx.lifecycle.ViewModel
@@ -87,7 +88,14 @@ class LibraryViewModel(
     /** null while the search box is empty, so the screen shows Inbox and Subjects instead. */
     val results: StateFlow<List<CaptureEntity>?> = _query
         .debounce(200)   // don't query on every keystroke
-        .flatMapLatest { q -> if (q.isBlank()) flowOf(null) else captures.search(q) }
+        .flatMapLatest { q ->
+            if (q.isBlank()) flowOf(null)
+            // Only this semester's subjects; unsorted items belong to no semester.
+            else combine(captures.search(q), subjects.observeActive(), subjects.observeArchived()) { found, active, archived ->
+                val here = (active + archived).map { it.id }.toSet()
+                found.filter { it.subjectId == null || it.subjectId in here }
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _selection = MutableStateFlow<Set<String>>(emptySet())

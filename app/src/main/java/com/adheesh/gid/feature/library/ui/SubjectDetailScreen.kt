@@ -1,5 +1,7 @@
 package com.adheesh.gid.feature.library.ui
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -93,6 +95,10 @@ fun SubjectDetailScreen(
 
     val categories by viewModel.allCategories.collectAsState()
     var categoriesOpen by rememberSaveable { mutableStateOf(false) }
+    val semesters by viewModel.allSemesters.collectAsState()
+    var moveOpen       by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val moveFailed = stringResource(R.string.subject_move_failed)
     var menuOpen       by rememberSaveable { mutableStateOf(false) }
     var renameOpen     by rememberSaveable { mutableStateOf(false) }
     var colorOpen      by rememberSaveable { mutableStateOf(false) }
@@ -127,6 +133,9 @@ fun SubjectDetailScreen(
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = GIDSurface) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.subject_rename), color = GIDText) }, onClick = { menuOpen = false; renameOpen = true })
                     DropdownMenuItem(text = { Text(stringResource(R.string.subject_color), color = GIDText) }, onClick = { menuOpen = false; colorOpen = true })
+                    if (semesters.isNotEmpty()) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.subject_move_semester), color = GIDText) }, onClick = { menuOpen = false; moveOpen = true })
+                    }
                     DropdownMenuItem(text = { Text(stringResource(R.string.subject_archive), color = GIDCoral) }, onClick = { menuOpen = false; archiveOpen = true })
                     DropdownMenuItem(text = { Text(stringResource(R.string.subject_delete), color = GIDCoral) }, onClick = { menuOpen = false; deleteOpen = true })
                 }
@@ -232,6 +241,18 @@ fun SubjectDetailScreen(
     }
 
     // ── Dialogs ──────────────────────────────────────────────────────────────
+    if (moveOpen) {
+        GIDDialog(title = stringResource(R.string.subject_move_semester), onDismiss = { moveOpen = false }) {
+            semesters.forEach { semester ->
+                TextButton(onClick = {
+                    moveOpen = false
+                    viewModel.moveToSemester(semester.id) { moved ->
+                        if (!moved) Toast.makeText(context, moveFailed, Toast.LENGTH_LONG).show()
+                    }
+                }) { Text(semester.name, color = if (semester.id == current.semesterId) GIDCyan else GIDText) }
+            }
+        }
+    }
     if (categoriesOpen) {
         CategoriesDialog(
             categories = categories,

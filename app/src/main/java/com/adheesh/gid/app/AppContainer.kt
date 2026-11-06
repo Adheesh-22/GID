@@ -1,5 +1,8 @@
 package com.adheesh.gid.app
 
+import com.adheesh.gid.feature.marks.data.MarksRepository
+import com.adheesh.gid.feature.semesters.data.SemesterRepository
+import com.adheesh.gid.feature.semesters.data.VtopImporter
 import com.adheesh.gid.feature.capture.data.CategoryRepository
 import com.adheesh.gid.feature.capture.data.CategoryRepositoryImpl
 import com.adheesh.gid.feature.syllabus.data.SyllabusRepository
@@ -95,13 +98,19 @@ class AppContainer(private val context: Context) {
 
     // ── Repositories ─────────────────────────────────────────────────────────
     val taskRepository         = TaskRepositoryImpl(database.taskDao())
-    val subjectRepository: SubjectRepository = SubjectRepositoryImpl(database)
-    val timetableRepository    = TimetableRepositoryImpl(database.timetableDao(), subjectRepository)
+    val semesterRepository     = SemesterRepository(database, preferences)
+    val subjectRepository: SubjectRepository = SubjectRepositoryImpl(database, preferences)
+    val timetableRepository    = TimetableRepositoryImpl(database.timetableDao(), subjectRepository, preferences)
     val captureFiles           = CaptureFileStore(context)
-    val examRepository: ExamRepository = ExamRepositoryImpl(database.examDao(), database.syllabusDao(), onChanged = { onExamsChanged() })
+    val examRepository: ExamRepository = ExamRepositoryImpl(database.examDao(), database.syllabusDao(), preferences, onChanged = { onExamsChanged() })
     val syllabusRepository: SyllabusRepository = SyllabusRepositoryImpl(database)
     val categoryRepository: CategoryRepository = CategoryRepositoryImpl(database)
-    val captureRepository: CaptureRepository = CaptureRepositoryImpl(database, captureFiles, examRepository)
+    val marksRepository        = MarksRepository(database.marksDao(), subjectRepository)
+    val vtopImporter           = VtopImporter(
+        semesterRepository, subjectRepository, timetableRepository, marksRepository, examRepository,
+        defaultReminderMinutes = { preferences.defaultReminderMinutes.first() },
+    )
+    val captureRepository: CaptureRepository = CaptureRepositoryImpl(database, captureFiles, examRepository, timetableRepository)
     val captureActions         = CaptureActions(captureRepository, captureFiles, appScope)
     val backupManager          = BackupManager(context, database, preferences, captureFiles)
     val holidayRepository      = HolidayRepositoryImpl(database.holidayDao())
@@ -174,6 +183,13 @@ class AppContainer(private val context: Context) {
     /** After any exam is added, edited, done or deleted. */
     private suspend fun onExamsChanged() {
         runCatching { examReminderScheduler.replan() }
+    }
+
+    /** Reminders and prompts follow the semester whose classes are running (SPEC §2.14). */
+    suspend fun setRunningSemester(id: String) {
+        semesterRepository.setRunning(id)
+        runCatching { classReminderScheduler.replan() }
+        runCatching { attendancePromptScheduler.replan() }
     }
 
     /** After a class is marked in the app or from its notification (SPEC §2.12). */

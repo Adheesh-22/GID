@@ -1,5 +1,13 @@
 package com.adheesh.gid.feature.exams.ui
 
+import androidx.compose.material.icons.rounded.ContentPaste
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.res.pluralStringResource
+import com.adheesh.gid.core.database.ExamKind
+import com.adheesh.gid.feature.marks.domain.VtopAssessmentCourse
+import com.adheesh.gid.feature.marks.domain.VtopAssessmentParser
+import com.adheesh.gid.feature.semesters.ui.SemesterChip
+import com.adheesh.gid.feature.semesters.ui.VtopPasteSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -54,6 +62,8 @@ fun ExamsScreen(
 
     var editorOpen by rememberSaveable { mutableStateOf(false) }
     var showPast   by rememberSaveable { mutableStateOf(false) }
+    var pasteOpen  by rememberSaveable { mutableStateOf(false) }
+    val assessments = viewModel.assessments
 
     Box(modifier.fillMaxSize()) {
         LazyColumn(
@@ -67,12 +77,26 @@ fun ExamsScreen(
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.cd_back), tint = GIDText)
                     }
                     Spacer(Modifier.width(4.dp))
-                    ScreenTitle(stringResource(R.string.exams_title))
+                    ScreenTitle(
+                        stringResource(if (assessments) R.string.assessments_title else R.string.exams_title),
+                        Modifier.weight(1f),
+                    )
+                    SemesterChip()
+                }
+            }
+
+            if (assessments) {
+                item {
+                    TextButton(onClick = { pasteOpen = true }) {
+                        Icon(Icons.Rounded.ContentPaste, contentDescription = null, tint = GIDCyan)
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.assessments_paste), color = GIDCyan)
+                    }
                 }
             }
 
             item { SectionTitle(stringResource(R.string.exams_upcoming), Modifier.padding(top = 8.dp)) }
-            if (upcoming.isEmpty()) item { EmptyText(stringResource(R.string.exams_empty)) }
+            if (upcoming.isEmpty()) item { EmptyText(stringResource(if (assessments) R.string.assessments_empty else R.string.exams_empty)) }
             items(upcoming, key = { it.id }) { exam ->
                 ExamRow(exam, subjectById[exam.subjectId], onClick = { onOpenExam(exam.id) })
             }
@@ -99,5 +123,33 @@ fun ExamsScreen(
         ) { Icon(Icons.Rounded.Add, stringResource(R.string.exam_add)) }
     }
 
-    if (editorOpen) ExamEditorSheet(viewModel, initial = null, onDismiss = { editorOpen = false })
+    if (editorOpen) {
+        ExamEditorSheet(
+            viewModel = viewModel,
+            initial   = null,
+            onDismiss = { editorOpen = false },
+            kinds     = ExamKind.entries.filter { it.isSubmitted == assessments },
+        )
+    }
+    if (pasteOpen) {
+        VtopPasteSheet<List<VtopAssessmentCourse>>(
+            title     = stringResource(R.string.assessments_paste),
+            hint      = stringResource(R.string.assessments_paste_hint),
+            field     = stringResource(R.string.assessments_paste_field),
+            notFound  = stringResource(R.string.assessments_paste_not_found),
+            action    = stringResource(R.string.assessments_paste_action),
+            parse     = VtopAssessmentParser::parse,
+            preview   = { courses ->
+                courses.forEach { course ->
+                    Text(
+                        pluralStringResource(R.plurals.assessments_preview, course.items.size, course.title, course.items.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GIDText,
+                    )
+                }
+            },
+            onImport  = viewModel::importAssessments,
+            onDismiss = { pasteOpen = false },
+        )
+    }
 }

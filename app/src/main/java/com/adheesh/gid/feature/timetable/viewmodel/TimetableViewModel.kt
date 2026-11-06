@@ -1,5 +1,7 @@
 package com.adheesh.gid.feature.timetable.viewmodel
 
+import com.adheesh.gid.feature.semesters.data.VtopImporter
+import kotlinx.coroutines.flow.first
 import com.adheesh.gid.feature.timetable.domain.VtopTimetable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -28,13 +30,12 @@ data class ClassDraft(
     val enabled         : Boolean,
 )
 
-private const val LAB_LABEL = "Lab"
-
 class TimetableViewModel(
     private val timetable : TimetableRepository,
     private val reminders : ClassReminderScheduler,
     private val prompts   : AttendancePromptScheduler,
-    preferences           : GIDPreferences,
+    private val preferences : GIDPreferences,
+    private val importer  : VtopImporter,
 ) : ViewModel() {
 
     /** Classes grouped by ISO day (1 = Monday), each day sorted by start time. */
@@ -62,6 +63,7 @@ class TimetableViewModel(
                 room            = draft.room.trim().ifBlank { null },
                 reminderMinutes = draft.reminderMinutes,
                 enabled         = draft.enabled,
+                semesterId      = existing?.semesterId ?: preferences.viewedSemesterId.first(),
                 createdAt       = existing?.createdAt ?: now,
                 updatedAt       = now,
             )
@@ -74,26 +76,12 @@ class TimetableViewModel(
 
     fun delete(entry: TimetableEntryEntity) = edit { timetable.delete(entry.id) }
 
-    /** Swaps the whole timetable for one pasted from VTOP (SPEC §2.7). */
-    fun importVtop(parsed: VtopTimetable) = edit {
-        val now = nowMillis()
-        timetable.replaceAll(
-            parsed.classes.map { c ->
-                TimetableEntryEntity(
-                    id              = newId(),
-                    subject         = c.courseName,
-                    dayOfWeek       = c.dayOfWeek,
-                    startMinutes    = c.startMinutes,
-                    endMinutes      = c.endMinutes,
-                    room            = if (c.isLab) "${c.venue} · $LAB_LABEL" else c.venue,
-                    reminderMinutes = defaultReminder.value,
-                    enabled         = true,
-                    createdAt       = now,
-                    updatedAt       = now,
-                )
-            }
-        )
-    }
+    /** One semester's timetable from VTOP (SPEC §2.7); [running] makes it the one whose classes remind. */
+    fun importVtop(parsed: VtopTimetable, running: Boolean) = edit { importer.importTimetable(parsed, running) }
+
+    /** Whether to offer 'classes running now' switched on: nothing is running yet. */
+    val nothingRunning: StateFlow<Boolean> = preferences.runningSemesterId.map { it == null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     /** Every timetable edit re-plans the reminders and after-class prompts. */
     private fun edit(block: suspend () -> Unit) = viewModelScope.launch {

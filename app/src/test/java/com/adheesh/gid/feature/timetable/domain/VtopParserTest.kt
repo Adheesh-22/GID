@@ -161,4 +161,43 @@ class VtopParserTest {
         assertNull(VtopParser.parse("BACSE201 - Models of Computation"))
         assertNull(VtopParser.parse(""))
     }
+
+    @Test fun `credits come from the course list`() {
+        val page = """
+            Winter Semester 2025-26
+
+            BACSE104 - Structured and Object-Oriented Programming
+
+            ( Embedded Theory )
+
+            2 0 0 0 2.0
+
+            Programme Core Courses
+
+            BACSE104 - Structured and Object-Oriented Programming
+
+            ( Embedded Lab )
+
+            0 0 4 0 2.0
+
+            BAHUM101 - India Studies
+
+            ( Online Course )
+
+            0 0 0 0 1.0
+
+            $timeRows
+            MON	THEORY	A1	F1	D1	TB1	TG1	-	Lunch	A2	F2	D2-BACSE104-ETH-PRP112-ALL	TB2	TG2	-	V3
+            LAB	L1	L2	L3	L4	L5	L6	Lunch	L31	L32	L33	L34	L35	L36	-
+        """.trimIndent()
+        val t = VtopParser.parse(page)!!
+        assertEquals(
+            listOf(
+                VtopCourse("BACSE104", "Structured and Object-Oriented Programming", "Embedded Theory", 2.0),
+                VtopCourse("BACSE104", "Structured and Object-Oriented Programming", "Embedded Lab", 2.0),
+                VtopCourse("BAHUM101", "India Studies", "Online Course", 1.0),
+            ),
+            t.courses,
+        )
+    }
 }

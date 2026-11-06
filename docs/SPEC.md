@@ -248,6 +248,37 @@ page. Home's 'Next up' shows a small 'N% syllabus' chip when the subject has
 topics.
 - Bar colour: green when done or on track, mustard when the exam is within 14
 days and under 70% done, coral when within 7 days and under 70% done.
+2.14 Semesters
+- Every subject belongs to one semester, and exams, assessments, attendance,
+syllabus, notes and marks follow their subject. A chip on Home, Library, Exams,
+Assessments, Attendance and Marks shows the semester in view; tap -> list of
+semesters plus 'All semesters'. The Inbox itself is not split, as it isn't sorted yet.
+- Pasting a VTOP timetable creates its semester, moves existing subjects with
+the same name into it, keeps other semesters' classes and switches to it.
+Subjects with no semester yet show under every semester until moved (subject
+menu > 'Move to semester').
+- 'Classes running now' is separate from the semester in view: only that
+semester's classes drive class reminders, attendance prompts, Home's class
+cards and subject suggestions, so looking at an old semester changes nothing.
+Reminders for upcoming exams and assessments keep working in every semester.
+2.15 Marks
+- Marks page (Home and Library): one card per subject in the semester, with its
+total out of 100. 'Paste from VTOP' reads the whole Marks View page.
+- Subject marks page: one card per part (Embedded Theory, Embedded Lab, ...) with
+each uploaded mark, its weighted mark and remark, then 'Uploaded X of Y', 'Left Z'
+and an 'Expected' box. Each part is out of 100: uploaded plus expected. The
+subject total updates as you type.
+- Subject total by credits: theory 3 and lab 1 is 75% and 25%, equal credits are
+50-50, a single part is all of it. Credits come from the timetable page and
+can be edited. Unknown credits count as one.
+- A new paste replaces uploaded marks; expectations and credits stay.
+2.16 Exams and Assessments are separate
+- Exams page: exams and tests. Assessments page: assignments and projects, plus
+'Paste from VTOP' reading Assignment Upload pages (one or several pasted
+together): due dates, max marks and weightage; an uploaded file marks it done.
+Pasting again updates the same rows.
+- Home's 'Next up' is two cards side by side, next exam and next assessment,
+each opening its own page.
 3. BEHAVIOUR RULES
 Sessions: one table (ActivitySession) feeds both sleep and focus stats.
 - Timer: start creates a RUNNING session with endsAt; finishing or stopping
@@ -310,6 +341,9 @@ carriedFromId?
 - TimetableEntry: subject, subjectId?, dayOfWeek, startMinutes, endMinutes,
 room?, reminderMinutes, enabled
 - Subject: name, nameKey (lowercase, trimmed, unique), colorHex?, archived
+- Semester: name, sortKey. MarkComponent: semesterId?, subjectId, courseCode,
+courseType, credits?, expected?. MarkEntry: componentId, title, maxMark, weightage,
+status, scoredMark?, weightageMark?, remark, sortOrder.
 - Heading: subjectId, name, sortOrder
 - Capture: kind (PHOTO, LINK, TEXT, PDF), type? (EXAM_QUESTION, RESOURCE,
 NOTE, DEADLINE, IDEA, NOTICE), status (INBOX, SORTED, ARCHIVED), title, note,
@@ -333,6 +367,8 @@ class name and links the classes to it. Version 3 adds the exams table
 Version 4 adds the attendance table and the new Subject and Capture columns
 (automatic migration). Deleting a subject deletes its attendance marks.
 No build may wipe data on a schema change: there is no destructive fallback.
+Version 7 adds semesters and marks, Subject.semesterId (a name is unique within a
+semester), TimetableEntry.semesterId and Exam.importKey (automatic migration).
 Version 6 adds capture categories (seeded with the defaults) and the alarm
 ringtone, snooze and pattern columns (automatic migration).
 Version 5 adds the syllabus tables and exam-unit links (automatic

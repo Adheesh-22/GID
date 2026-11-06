@@ -12,12 +12,17 @@ data class VtopClass(
     val isLab        : Boolean,
 )
 
+/** One line of the course list: its name, kind and credits. */
+data class VtopCourse(val code: String, val name: String, val type: String, val credits: Double)
+
 data class VtopTimetable(
     /** E.g. 'Winter Semester 2026-27', when the paste includes it. */
     val semester       : String?,
     val classes        : List<VtopClass>,
     /** Courses in the list with no slot in the grid, such as projects and MOOCs. */
     val withoutClasses : List<String>,
+    /** Each course part with its credits; empty if the list wasn't pasted. */
+    val courses        : List<VtopCourse> = emptyList(),
 )
 
 // ── VIT VTOP time table page (SPEC §2.7) ─────────────────────────────────────
@@ -39,6 +44,10 @@ object VtopParser {
     // 'BACSE202 - Database Systems'; the name stops at a tab or '( Embedded Theory )'.
     private val courseLine = Regex("""\b([A-Z]{2,}\d{2,}[A-Z]?)\s+-\s+([^\t\r\n(]+)""")
     private val courseCode = Regex("""[A-Z]{2,}\d{2,}[A-Z]?""")
+    // 'BACSE202 - Database Systems ( Embedded Theory ) 3 0 0 0 3.0': the last number is credits.
+    private val courseWithCredits = Regex(
+        """\b([A-Z]{2,}\d{2,}[A-Z]?)\s+-\s+([^\t\r\n(]+?)\s*\(\s*([^)]+?)\s*\)\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+(?:\.\d+)?)"""
+    )
     private val clock = Regex("""(\d{1,2}):(\d{2})""")
 
     /** Null when the text has no time table grid. */
@@ -82,6 +91,10 @@ object VtopParser {
             semester       = semesterName.find(text)?.value?.replace(whitespace, " "),
             classes        = classes.sortedWith(compareBy({ it.dayOfWeek }, { it.startMinutes })),
             withoutClasses = names.filterKeys { it !in withSlots }.values.toList(),
+            courses        = courseWithCredits.findAll(text).map { m ->
+                val (code, name, type, credits) = m.destructured
+                VtopCourse(code, name.trim(), type, credits.toDouble())
+            }.toList(),
         )
     }
 

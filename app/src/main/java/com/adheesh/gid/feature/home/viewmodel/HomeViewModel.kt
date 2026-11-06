@@ -113,13 +113,13 @@ class HomeViewModel(
             .minByOrNull { it.triggerAt }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val upcoming: StateFlow<UpcomingClasses> = combine(timetable.observeAll(), holidayDays, minuteTicker) { entries, holidaySet, now ->
+    val upcoming: StateFlow<UpcomingClasses> = combine(timetable.observeRunning(), holidayDays, minuteTicker) { entries, holidaySet, now ->
         upcomingClasses(entries.filter { it.enabled }, holidaySet, now.toLocalDate(), now.toLocalTime())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UpcomingClasses(null, emptyList(), false))
 
     /** Today's classes that have started, to mark present/absent/cancelled. Empty on holidays. */
     val classesToMark: StateFlow<List<ClassToMark>> = combine(
-        timetable.observeAll(),
+        timetable.observeRunning(),
         holidayDays,
         minuteTicker,
         todayFlow.flatMapLatest { attendance.observeForDay(it.toEpochDay()) },
@@ -136,7 +136,7 @@ class HomeViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Whether there is a timetable at all, so the attendance card can hide. */
-    val hasClasses: StateFlow<Boolean> = timetable.observeAll().map { list -> list.any { it.enabled } }
+    val hasClasses: StateFlow<Boolean> = timetable.observeRunning().map { list -> list.any { it.enabled } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     /** Tapping the current mark again clears it. */

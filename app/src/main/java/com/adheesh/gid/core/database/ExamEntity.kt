@@ -23,6 +23,7 @@ data class ExamEntity(
     val notes               : String  = "",
     val completedAt         : Long?   = null,
     val sourceCaptureId     : String? = null,   // the Deadline capture it was made from
+    val importKey           : String? = null,   // VTOP class + title, so pasting again updates it
     val createdAt           : Long,
     val updatedAt           : Long,
 )

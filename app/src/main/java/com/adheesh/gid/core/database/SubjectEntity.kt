@@ -10,7 +10,8 @@ import androidx.room.PrimaryKey
 // nameKey = name lowercased and trimmed, so "DBMS" and " dbms " are one subject.
 @Entity(
     tableName = "subjects",
-    indices   = [Index(value = ["nameKey"], unique = true)],
+    // The same course name can come back in a later semester as its own subject.
+    indices   = [Index(value = ["semesterId", "nameKey"], unique = true)],
 )
 data class SubjectEntity(
     @PrimaryKey val id : String,
@@ -18,6 +19,8 @@ data class SubjectEntity(
     val nameKey        : String,
     val colorHex       : String?  = null,
     val archived       : Boolean  = false,
+    /** Null until its semester is known; it then shows under every semester. */
+    val semesterId     : String?  = null,
     /** Attendance target in percent; null = the one in Settings (SPEC §2.12). */
     val attendanceTarget : Int?   = null,
     /** Classes attended / held before the student started marking in GID. */

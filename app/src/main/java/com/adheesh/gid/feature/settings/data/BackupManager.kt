@@ -155,6 +155,6 @@ class BackupManager(
         private const val CAPTURES_DIR = "captures"
         private const val PHOTO_DIR    = "photo"
         /** Keep in step with GIDDatabase's version. */
-        const val DB_VERSION = 6
+        const val DB_VERSION = 7
     }
 }

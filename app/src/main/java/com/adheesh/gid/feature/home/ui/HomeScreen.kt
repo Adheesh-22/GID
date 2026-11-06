@@ -1,5 +1,11 @@
 package com.adheesh.gid.feature.home.ui
 
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.automirrored.rounded.Assignment
+import androidx.compose.material.icons.rounded.Grade
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.adheesh.gid.feature.semesters.ui.SemesterChip
 import com.adheesh.gid.core.designsystem.LocalBackdropColors
 import com.adheesh.gid.feature.syllabus.domain.SyllabusProgress
 import com.adheesh.gid.feature.syllabus.ui.color
@@ -108,6 +114,10 @@ fun HomeScreen(
     nextExam         : ExamEntity?,
     nextExamSubject  : SubjectEntity?,
     nextExamSyllabus : SyllabusProgress,
+    nextAssessment   : ExamEntity?,
+    nextAssessmentSubject : SubjectEntity?,
+    onOpenAssessments : () -> Unit,
+    onOpenMarks      : () -> Unit,
     onOpenExams      : () -> Unit,
     onOpenAttendance : () -> Unit,
     modifier         : Modifier = Modifier,
@@ -183,6 +193,8 @@ fun HomeScreen(
             )
         }
 
+        SemesterChip()
+
         // Pushes the Calendar and everything below it further down
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -244,45 +256,48 @@ fun HomeScreen(
             CaptureButton(captureActions, onSaved = {}, modifier = Modifier.size(44.dp))
         }
 
-        // ── Next up: the soonest exam or assignment (SPEC §2.10) ─────────────
+        // ── Next up: exams and assessments apart (SPEC §2.16) ────────────────
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            NextUpCard(
+                heading  = stringResource(R.string.home_next_exam),
+                icon     = Icons.Rounded.Event,
+                exam     = nextExam,
+                subject  = nextExamSubject,
+                onClick  = onOpenExams,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            ) {
+                nextExamSyllabus.percent?.let { percent ->
+                    Text(
+                        stringResource(R.string.syllabus_chip, percent),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = nextExamSyllabus.level(nextExam?.let { it.dateEpochDay - today().toEpochDay() }).color(),
+                    )
+                }
+            }
+            NextUpCard(
+                heading  = stringResource(R.string.home_next_assessment),
+                icon     = Icons.AutoMirrored.Rounded.Assignment,
+                exam     = nextAssessment,
+                subject  = nextAssessmentSubject,
+                onClick  = onOpenAssessments,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+        }
+
+        // ── Marks (SPEC §2.15) ───────────────────────────────────────────────
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(MaterialTheme.shapes.medium)
+                .clip(CircleShape)
                 .background(GIDSurface)
-                .clickable(onClick = onOpenExams)
+                .clickable(onClick = onOpenMarks)
                 .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
-            Icon(Icons.Rounded.Event, contentDescription = null, tint = GIDPeriwinkle)
+            Icon(Icons.Rounded.Grade, contentDescription = null, tint = GIDMustard)
             Spacer(Modifier.size(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.home_next_up), style = MaterialTheme.typography.labelLarge, color = GIDMutedText)
-                if (nextExam == null) {
-                    Text(stringResource(R.string.home_nothing_due), style = MaterialTheme.typography.titleMedium, color = GIDText)
-                } else {
-                    Text(
-                        listOfNotNull(nextExamSubject?.name, nextExam.displayTitle()).joinToString(" · "),
-                        style    = MaterialTheme.typography.titleMedium,
-                        color    = GIDText,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(nextExam.whenText(), style = MaterialTheme.typography.bodySmall, color = GIDMutedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            if (nextExam != null) {
-                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    CountdownChip(nextExam.countdown())
-                    nextExamSyllabus.percent?.let { percent ->
-                        Text(
-                            stringResource(R.string.syllabus_chip, percent),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = nextExamSyllabus.level(nextExam.dateEpochDay - today().toEpochDay()).color(),
-                        )
-                    }
-                }
-            }
+            Text(stringResource(R.string.marks_title), style = MaterialTheme.typography.titleMedium, color = GIDText, modifier = Modifier.weight(1f))
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = GIDMutedText)
         }
 
         // ── Attendance: today's classes that have started (SPEC §2.12) ──────
@@ -490,6 +505,47 @@ private fun StripDay(
         }
         Box(Modifier.height(8.dp), contentAlignment = Alignment.Center) {
             if (hasTasks) Dot(GIDCoral, size = 4.dp)
+        }
+    }
+}
+
+/** The soonest exam or the soonest assessment; opens its own page. */
+@Composable
+private fun NextUpCard(
+    heading  : String,
+    icon     : ImageVector,
+    exam     : ExamEntity?,
+    subject  : SubjectEntity?,
+    onClick  : () -> Unit,
+    modifier : Modifier = Modifier,
+    extra    : @Composable () -> Unit = {},
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier
+            .clip(MaterialTheme.shapes.medium)
+            .background(GIDSurface)
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = GIDPeriwinkle, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.size(6.dp))
+            Text(heading, style = MaterialTheme.typography.labelLarge, color = GIDMutedText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (exam == null) {
+            Text(stringResource(R.string.home_nothing_due), style = MaterialTheme.typography.titleMedium, color = GIDText)
+        } else {
+            Text(
+                listOfNotNull(subject?.name, exam.displayTitle()).joinToString(" · "),
+                style    = MaterialTheme.typography.titleMedium,
+                color    = GIDText,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(exam.whenText(), style = MaterialTheme.typography.bodySmall, color = GIDMutedText, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            CountdownChip(exam.countdown())
+            extra()
         }
     }
 }

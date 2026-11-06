@@ -1,5 +1,6 @@
 package com.adheesh.gid.feature.attendance.ui
 
+import com.adheesh.gid.feature.semesters.ui.SemesterChip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -77,7 +78,8 @@ fun AttendanceScreen(
                     Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.cd_back), tint = GIDText)
                 }
                 Spacer(Modifier.width(4.dp))
-                ScreenTitle(stringResource(R.string.attendance_title))
+                ScreenTitle(stringResource(R.string.attendance_title), Modifier.weight(1f))
+                SemesterChip()
             }
         }
         if (summaries.isEmpty()) item { EmptyText(stringResource(R.string.attendance_empty)) }

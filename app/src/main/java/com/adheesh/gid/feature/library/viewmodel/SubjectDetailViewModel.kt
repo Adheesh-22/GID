@@ -1,5 +1,7 @@
 package com.adheesh.gid.feature.library.viewmodel
 
+import com.adheesh.gid.core.database.SemesterEntity
+import com.adheesh.gid.feature.semesters.data.SemesterRepository
 import com.adheesh.gid.core.database.CaptureCategoryEntity
 import com.adheesh.gid.feature.capture.data.CategoryRepository
 import com.adheesh.gid.feature.syllabus.data.SyllabusRepository
@@ -36,7 +38,14 @@ class SubjectDetailViewModel(
     attendance            : AttendanceRepository,
     syllabus              : SyllabusRepository,
     private val categories : CategoryRepository,
+    semesters             : SemesterRepository,
 ) : ViewModel() {
+
+    val allSemesters: StateFlow<List<SemesterEntity>> = semesters.semesters
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** False through [onDone] if that semester already has a subject with this name. */
+    fun moveToSemester(semesterId: String, onDone: (Boolean) -> Unit) = launch { onDone(subjects.moveToSemester(subjectId, semesterId)) }
 
     /** One tab each, after All (SPEC §2.8). */
     val allCategories: StateFlow<List<CaptureCategoryEntity>> = categories.observeAll()

@@ -58,7 +58,7 @@ class AttendanceRepositoryImpl(
     override fun observeSummaries(): Flow<List<SubjectAttendance>> = combine(
         subjects.observeActive(),
         dao.observeCounts(),
-        timetable.observeAll(),
+        timetable.observeEverything(),
         preferences.attendanceTarget,
     ) { active, counts, classes, defaultTarget ->
         val bySubject = counts.groupBy { it.subjectId }
@@ -85,7 +85,7 @@ class AttendanceRepositoryImpl(
 
     override suspend fun mark(entry: TimetableEntryEntity, day: Long, status: AttendanceStatus): AttendanceEntity {
         // A class saved before subjects existed may not be linked yet.
-        val subjectId = entry.subjectId ?: subjects.ensure(entry.subject).id.also {
+        val subjectId = entry.subjectId ?: subjects.ensureIn(entry.subject, entry.semesterId).id.also {
             timetable.save(entry.copy(subjectId = it))
         }
         val now = nowMillis()

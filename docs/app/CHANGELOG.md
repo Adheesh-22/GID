@@ -8,6 +8,15 @@ version when it's committed.
 
 ## Unreleased (not committed yet)
 
+### V1.7: Semesters, Marks, separate Assessments
+- **Semesters:** subjects and everything attached to them are split by semester. Pasting a
+  Time Table page sorts existing subjects by name. A running semester drives reminders.
+- **Marks:** paste Marks View; per-subject page with uploaded, left and expected marks, totals
+  out of 100 weighted by credits.
+- **Assessments:** own page, separate from Exams, with Assignment Upload paste. Home shows the
+  next exam and next assessment side by side.
+- **Database:** version 7 (automatic migration).
+
 ### V1.6: Reliable alarms, simpler alarms, photo crop
 - **Alarm not ringing:** several real gaps fixed:
   - a wake lock from the moment the alarm fires (the sound had been waiting on a database

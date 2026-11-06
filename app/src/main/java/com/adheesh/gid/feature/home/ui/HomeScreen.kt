@@ -32,7 +32,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -289,23 +288,27 @@ fun HomeScreen(
         // ── Attendance: today's classes that have started (SPEC §2.12) ──────
         if (hasClasses) {
             GIDCard(Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Same inset as the Inbox and Next up rows; the link's right edge lines up with the buttons.
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp)) {
                     Text(
                         stringResource(R.string.attendance_today),
                         style    = MaterialTheme.typography.titleMedium,
                         color    = GIDText,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(onClick = onOpenAttendance) {
-                        Text(stringResource(R.string.attendance_see_all), color = GIDCyan)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clip(CircleShape).clickable(onClick = onOpenAttendance).padding(vertical = 4.dp),
+                    ) {
+                        Text(stringResource(R.string.attendance_see_all), style = MaterialTheme.typography.labelLarge, color = GIDCyan)
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = GIDCyan)
                     }
                 }
                 if (toMark.isEmpty()) {
-                    Text(stringResource(R.string.attendance_nothing_yet), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
+                    Text(stringResource(R.string.attendance_nothing_yet), style = MaterialTheme.typography.bodySmall, color = GIDMutedText, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
                 }
                 toMark.forEach { item ->
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp, top = 10.dp)) {
                         Column(Modifier.weight(1f)) {
                             Text(item.entry.subject, style = MaterialTheme.typography.bodyMedium, color = GIDText, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
@@ -336,7 +339,7 @@ fun HomeScreen(
                         )
                         Text(
                             listOfNotNull(
-                                alarm.type?.name,
+                                alarm.alarm.label.ifBlank { null },
                                 if (alarm.triggerAt.toLocalDate() != today()) alarm.triggerAt.toLocalDate().formatShort() else null,
                             ).joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall,

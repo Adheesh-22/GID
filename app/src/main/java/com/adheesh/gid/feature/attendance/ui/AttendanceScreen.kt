@@ -1,8 +1,6 @@
 package com.adheesh.gid.feature.attendance.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -19,8 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,8 +39,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.adheesh.gid.R
-import com.adheesh.gid.core.database.AttendanceEntity
-import com.adheesh.gid.core.database.AttendanceStatus
 import com.adheesh.gid.core.designsystem.Dot
 import com.adheesh.gid.core.designsystem.EmptyText
 import com.adheesh.gid.core.designsystem.GIDCard
@@ -54,19 +48,15 @@ import com.adheesh.gid.core.designsystem.GIDSurface
 import com.adheesh.gid.core.designsystem.GIDText
 import com.adheesh.gid.core.designsystem.GIDTextField
 import com.adheesh.gid.core.designsystem.ScreenTitle
-import com.adheesh.gid.core.designsystem.SectionTitle
-import com.adheesh.gid.core.util.formatMinutesOfDay
-import com.adheesh.gid.core.util.formatShort
 import com.adheesh.gid.feature.attendance.data.SubjectAttendance
 import com.adheesh.gid.feature.attendance.viewmodel.AttendanceViewModel
 import com.adheesh.gid.feature.library.ui.Choice
 import com.adheesh.gid.feature.library.ui.Label
 import com.adheesh.gid.feature.library.ui.color
-import java.time.LocalDate
 
 // ── Attendance page (SPEC §2.12) ─────────────────────────────────────────────
 // One card per subject with its percent against the target; tap a card for
-// its marks, the 'Before GID' counts and its own target.
+// its 'Before GID' counts and its own target.
 @Composable
 fun AttendanceScreen(
     viewModel : AttendanceViewModel,
@@ -136,7 +126,6 @@ fun SubjectAttendanceCard(item: SubjectAttendance, onClick: () -> Unit, modifier
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun SubjectAttendanceSheet(item: SubjectAttendance, viewModel: AttendanceViewModel, onDismiss: () -> Unit) {
-    val marks         by viewModel.openMarks.collectAsState()
     val defaultTarget by viewModel.defaultTarget.collectAsState()
     val subject = item.subject
     var present by rememberSaveable(subject.id) { mutableStateOf(subject.priorPresent.toString()) }
@@ -203,42 +192,6 @@ private fun SubjectAttendanceSheet(item: SubjectAttendance, viewModel: Attendanc
                     }
                 }
             }
-
-            item { SectionTitle(stringResource(R.string.attendance_marks), Modifier.padding(top = 8.dp)) }
-            if (marks.isEmpty()) item { EmptyText(stringResource(R.string.attendance_no_marks)) }
-            items(marks, key = { it.id }) { mark ->
-                MarkRow(mark, onStatus = { viewModel.setStatus(mark, it) }, onRemove = { viewModel.delete(mark) })
-            }
-        }
-    }
-}
-
-@Composable
-private fun MarkRow(mark: AttendanceEntity, onStatus: (AttendanceStatus) -> Unit, onRemove: () -> Unit) {
-    var menuOpen by remember { mutableStateOf(false) }
-    val status = AttendanceStatus.of(mark.status)
-    Box {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().clickable { menuOpen = true }.padding(vertical = 8.dp),
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(LocalDate.ofEpochDay(mark.dateEpochDay).formatShort(), style = MaterialTheme.typography.bodyMedium, color = GIDText)
-                Text(formatMinutesOfDay(mark.startMinutes), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
-            }
-            if (status != null) Text(status.label(), style = MaterialTheme.typography.labelLarge, color = status.color())
-        }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = GIDSurface) {
-            AttendanceStatus.entries.forEach { option ->
-                DropdownMenuItem(
-                    text    = { Text(option.label(), color = option.color()) },
-                    onClick = { menuOpen = false; onStatus(option) },
-                )
-            }
-            DropdownMenuItem(
-                text    = { Text(stringResource(R.string.attendance_remove), color = GIDText) },
-                onClick = { menuOpen = false; onRemove() },
-            )
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.adheesh.gid.feature.attendance.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -88,7 +89,7 @@ fun MarkButtons(
     onMark   : (AttendanceStatus) -> Unit,
     modifier : Modifier = Modifier,
 ) {
-    Row(modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         MarkButton(Icons.Rounded.Check, stringResource(R.string.cd_mark_present, subject), GIDHolidayGreen, current == AttendanceStatus.PRESENT) {
             onMark(AttendanceStatus.PRESENT)
         }
@@ -111,19 +112,4 @@ private fun MarkButton(icon: ImageVector, description: String, color: Color, sel
         ),
         modifier = Modifier.size(36.dp),
     ) { Icon(icon, contentDescription = description, modifier = Modifier.size(18.dp)) }
-}
-
-@Composable
-fun AttendanceStatus.label(): String = stringResource(
-    when (this) {
-        AttendanceStatus.PRESENT   -> R.string.attendance_present
-        AttendanceStatus.ABSENT    -> R.string.attendance_absent
-        AttendanceStatus.CANCELLED -> R.string.attendance_cancelled
-    }
-)
-
-fun AttendanceStatus.color(): Color = when (this) {
-    AttendanceStatus.PRESENT   -> GIDHolidayGreen
-    AttendanceStatus.ABSENT    -> GIDCoral
-    AttendanceStatus.CANCELLED -> GIDMutedText
 }

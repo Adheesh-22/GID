@@ -1,5 +1,9 @@
 package com.adheesh.gid.feature.alarm.ui
 
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.rounded.NotificationsActive
+import com.adheesh.gid.core.scheduling.AlarmDiagnostics
+import com.adheesh.gid.core.scheduling.AlarmScheduler
 import android.app.Activity
 import android.media.RingtoneManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -58,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -137,7 +142,6 @@ fun AlarmPopup(viewModel: AlarmViewModel, onDismiss: () -> Unit) {
                 alarms.forEach { alarm ->
                     AlarmRow(
                         alarm    = alarm,
-                        type     = types.firstOrNull { it.id == alarm.typeId },
                         onToggle = { viewModel.setEnabled(alarm, it) },
                         onClick  = { editingId = alarm.id; editorOpen = true },
                     )
@@ -147,15 +151,16 @@ fun AlarmPopup(viewModel: AlarmViewModel, onDismiss: () -> Unit) {
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.alarm_add), color = GIDCyan)
                 }
+                TestAlarm(onTest = viewModel::testAlarm)
             } else {
                 TimersTab(types = types, timers = timers, onStart = viewModel::startTimer, onStop = viewModel::stopTimer)
-            }
 
-            // ── Activity types manager ──────────────────────────────────────
-            TextButton(onClick = { typesOpen = true }) {
-                Icon(Icons.Rounded.Category, contentDescription = null, tint = GIDMutedText)
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.types_title), color = GIDMutedText)
+                // ── Activity types manager ──────────────────────────────────
+                TextButton(onClick = { typesOpen = true }) {
+                    Icon(Icons.Rounded.Category, contentDescription = null, tint = GIDMutedText)
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.types_title), color = GIDMutedText)
+                }
             }
         }
     }
@@ -163,7 +168,6 @@ fun AlarmPopup(viewModel: AlarmViewModel, onDismiss: () -> Unit) {
     if (editorOpen) {
         AlarmEditorDialog(
             initial   = alarms.firstOrNull { it.id == editingId },
-            types     = types,
             onSave    = { existing, draft -> viewModel.saveAlarm(existing, draft); editorOpen = false },
             onDelete  = { alarm -> viewModel.deleteAlarm(alarm); editorOpen = false },
             onDismiss = { editorOpen = false },
@@ -218,7 +222,7 @@ private fun PermissionBanner() {
 }
 
 @Composable
-private fun AlarmRow(alarm: AlarmEntity, type: ActivityTypeEntity?, onToggle: (Boolean) -> Unit, onClick: () -> Unit) {
+private fun AlarmRow(alarm: AlarmEntity, onToggle: (Boolean) -> Unit, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
@@ -229,31 +233,17 @@ private fun AlarmRow(alarm: AlarmEntity, type: ActivityTypeEntity?, onToggle: (B
                 style = MaterialTheme.typography.displayMedium,
                 color = if (alarm.enabled) GIDText else GIDMutedText,
             )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (type != null) TypeChip(type)
-                Text(
-                    listOfNotNull(alarm.label.ifBlank { null }, repeatText(alarm.repeatDaysMask)).joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = GIDMutedText,
-                )
-            }
+            Text(
+                listOfNotNull(alarm.label.ifBlank { null }, repeatText(alarm.repeatDaysMask)).joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = GIDMutedText,
+            )
         }
         Switch(
             checked = alarm.enabled,
             onCheckedChange = onToggle,
             colors = SwitchDefaults.colors(checkedTrackColor = GIDPeriwinkle, checkedThumbColor = OnCard),
         )
-    }
-}
-
-@Composable
-private fun TypeChip(type: ActivityTypeEntity) {
-    Surface(color = GIDSurfaceHigh, shape = MaterialTheme.shapes.large) {
-        Row(Modifier.padding(horizontal = 8.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-            Dot(colorFromHex(type.colorHex), size = 8.dp)
-            Spacer(Modifier.width(4.dp))
-            Text(type.name, style = MaterialTheme.typography.labelMedium, color = GIDText)
-        }
     }
 }
 
@@ -346,16 +336,14 @@ private fun TypePicker(types: List<ActivityTypeEntity>, selectedId: String?, onS
 @Composable
 private fun AlarmEditorDialog(
     initial   : AlarmEntity?,
-    types     : List<ActivityTypeEntity>,
     onSave    : (AlarmEntity?, AlarmDraft) -> Unit,
     onDelete  : (AlarmEntity) -> Unit,
     onDismiss : () -> Unit,
 ) {
     var minutes    by rememberSaveable { mutableStateOf(initial?.let { it.hour * 60 + it.minute } ?: (7 * 60)) }
     var label      by rememberSaveable { mutableStateOf(initial?.label.orEmpty()) }
-    var typeId     by rememberSaveable { mutableStateOf(initial?.typeId ?: types.firstOrNull { it.category == ActivityCategory.SLEEP.name }?.id) }
-    var mask       by rememberSaveable { mutableStateOf(initial?.repeatDaysMask ?: 0) }
-    var sleepNow   by rememberSaveable { mutableStateOf(false) }
+    // A new alarm repeats every day until told otherwise.
+    var mask       by rememberSaveable { mutableStateOf(initial?.repeatDaysMask ?: ALL_DAYS) }
     var pickTime   by rememberSaveable { mutableStateOf(false) }
     var ringtone   by rememberSaveable { mutableStateOf(initial?.ringtoneUri) }
     var snooze     by rememberSaveable { mutableStateOf(initial?.snoozeMinutes ?: AlarmEntity.DEFAULT_SNOOZE_MINUTES) }
@@ -374,9 +362,6 @@ private fun AlarmEditorDialog(
         }
     }
 
-    val category = types.firstOrNull { it.id == typeId }?.let { ActivityCategory.of(it.category) }
-    val isSleepType = category == ActivityCategory.SLEEP || category == ActivityCategory.NAP
-
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor   = GIDSurface,
@@ -391,9 +376,14 @@ private fun AlarmEditorDialog(
                     label           = stringResource(R.string.field_label),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 )
-                Text(stringResource(R.string.field_type), style = MaterialTheme.typography.labelMedium, color = GIDMutedText)
-                TypePicker(types, typeId) { typeId = it }
                 Text(stringResource(R.string.field_repeat), style = MaterialTheme.typography.labelMedium, color = GIDMutedText)
+                FilterChip(
+                    selected = mask == ALL_DAYS,
+                    // Off again means it rings once.
+                    onClick  = { mask = if (mask == ALL_DAYS) 0 else ALL_DAYS },
+                    label    = { Text(stringResource(R.string.alarm_all_days)) },
+                    colors   = FilterChipDefaults.filterChipColors(selectedContainerColor = GIDPeriwinkle, selectedLabelColor = OnCard, labelColor = GIDText),
+                )
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     (1..7).forEach { d ->
                         FilterChip(
@@ -435,15 +425,6 @@ private fun AlarmEditorDialog(
                     }
                     Switch(checked = usePattern, onCheckedChange = { usePattern = it }, colors = SwitchDefaults.colors(checkedTrackColor = GIDPeriwinkle, checkedThumbColor = OnCard))
                 }
-                if (isSleepType) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.alarm_start_sleep_now), color = GIDText)
-                            Text(stringResource(R.string.alarm_start_sleep_hint), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
-                        }
-                        Switch(checked = sleepNow, onCheckedChange = { sleepNow = it }, colors = SwitchDefaults.colors(checkedTrackColor = GIDPeriwinkle, checkedThumbColor = OnCard))
-                    }
-                }
                 if (initial != null) {
                     TextButton(onClick = { onDelete(initial) }) {
                         Icon(Icons.Rounded.Delete, contentDescription = null, tint = Error)
@@ -455,15 +436,12 @@ private fun AlarmEditorDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = typeId != null,
                 onClick = {
-                    val type = typeId ?: return@TextButton
                     onSave(
                         initial,
                         AlarmDraft(
-                            label, type, minutes / 60, minutes % 60, mask, enabled = true,
+                            label, minutes / 60, minutes % 60, mask, enabled = true,
                             ringtoneUri = ringtone, snoozeMinutes = snooze, requirePattern = usePattern,
-                            startSleepNow = sleepNow && isSleepType,
                         ),
                     )
                 },
@@ -478,6 +456,36 @@ private fun AlarmEditorDialog(
 }
 
 private val SNOOZE_CHOICES = listOf(1, 2, 5, 10, 15, 30)
+private const val ALL_DAYS = 0b1111111
+
+/** A real alarm in 30 seconds, and the log of what happened on the way to the sound. */
+@Composable
+private fun TestAlarm(onTest: () -> Unit) {
+    val context = LocalContext.current
+    var log by remember { mutableStateOf(AlarmDiagnostics.read(context)) }
+    var logOpen by rememberSaveable { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        log = AlarmDiagnostics.read(context)
+        onPauseOrDispose { }
+    }
+    TextButton(onClick = {
+        onTest()
+        log = AlarmDiagnostics.read(context)
+    }) {
+        Icon(Icons.Rounded.NotificationsActive, contentDescription = null, tint = GIDCyan)
+        Spacer(Modifier.width(6.dp))
+        Text(pluralStringResource(R.plurals.alarm_test, AlarmScheduler.TEST_DELAY_SECONDS, AlarmScheduler.TEST_DELAY_SECONDS), color = GIDCyan)
+    }
+    Text(stringResource(R.string.alarm_test_hint), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
+    if (log.isNotEmpty()) {
+        TextButton(onClick = { logOpen = !logOpen }) { Text(stringResource(R.string.alarm_log), color = GIDMutedText) }
+        if (logOpen) {
+            SelectionContainer {
+                Text(log.joinToString("\n"), style = MaterialTheme.typography.bodySmall, color = GIDMutedText)
+            }
+        }
+    }
+}
 
 // ── Activity types manager ───────────────────────────────────────────────────
 @Composable

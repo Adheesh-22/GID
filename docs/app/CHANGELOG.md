@@ -8,13 +8,33 @@ version when it's committed.
 
 ## Unreleased (not committed yet)
 
-### V1.5: Subject tabs, alarm pattern, VTOP import
+### V1.6: Reliable alarms, simpler alarms, photo crop
+- **Alarm not ringing:** several real gaps fixed:
+  - a wake lock from the moment the alarm fires (the sound had been waiting on a database
+    read with nothing keeping the phone awake);
+  - the sound no longer waits more than 1.5 s for that read;
+  - alarm volume lifted to at least 70% for the ring, then restored;
+  - more fallback tones, then a beep;
+  - a backup notification if Android refuses the service (before, the app crashed).
+- **Test alarm and Alarm log:** ring in 30 seconds and see what happened.
+- **Timers:** a finished timer now rings until stopped, instead of one notification beep.
+- **Alarms are plain:** no activity types, no "Start sleep now", no session offer after
+  dismissing. **All days** button, on by default.
+- **Settings:** a new profile photo opens a preview and crop screen before saving.
+- **Attendance:** the marks list is gone from the subject sheet.
+- **Home:** Attendance today card layout; Snooze also needs the pattern.
+
+---
+
+## 4 Nov 2026
+
+### `cd7a54f` V1.5: Subject tabs, alarm pattern, VTOP import
 - **Library:** each subject opens with tabs: All, then one per category. Categories can be
   added, renamed and removed (Deadline can only be renamed).
 - **Alarms:**
   - a ringtone per alarm;
   - snooze length per alarm, 5 minutes by default (it was fixed at 2);
-  - **Draw a pattern to stop:** a random 3×3 pattern, on by default.
+  - **Draw a pattern to stop or snooze:** a random 3×3 pattern, on by default.
 - **Timetable:** Paste from VTOP builds the whole timetable from VIT's Time Table page.
 - **Settings:**
   - **How to use GID**, a guide to every feature;
@@ -25,18 +45,6 @@ version when it's committed.
 - **Data safety:** removed the debug-only fallback that could wipe the database on a schema
   problem.
 - **Database:** version 6 (automatic migration).
-
-Suggested commit message:
-```
-Add subject tabs, alarm pattern, VTOP timetable import and in-app guide
-
-Library: subject pages get All + per-category tabs; categories can be added,
-renamed and removed. Alarms: ringtone and snooze length per alarm (default 5
-min), random 3x3 pattern to stop. Timetable: paste VIT VTOP's page to build it
-with exact times. Settings: How to use GID page, Contact us fills in the To
-address. Home shows the month. Word and PowerPoint captures; text adapts to light
-wallpapers; no destructive migration in any build. Room v6 (seeds categories).
-```
 
 ---
 

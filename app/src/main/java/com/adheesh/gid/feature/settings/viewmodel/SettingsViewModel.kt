@@ -1,5 +1,7 @@
 package com.adheesh.gid.feature.settings.viewmodel
 
+import android.graphics.Bitmap
+import com.adheesh.gid.feature.settings.domain.CropSquare
 import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
@@ -141,11 +143,15 @@ class SettingsViewModel(
         }
     }
 
-    fun setPhoto(uri: Uri) {
+    suspend fun loadPhotoForCrop(uri: Uri): Bitmap? = photos.loadForCrop(uri)
+
+    fun savePhoto(source: Bitmap, crop: CropSquare) {
         viewModelScope.launch {
-            if (!photos.save(uri)) _ui.update { it.copy(message = R.string.settings_photo_failed) }
+            if (!photos.saveCropped(source, crop)) _ui.update { it.copy(message = R.string.settings_photo_failed) }
         }
     }
+
+    fun photoFailed() = _ui.update { it.copy(message = R.string.settings_photo_failed) }
 
     fun setEveningPrompt(minutes: Int) {
         viewModelScope.launch {

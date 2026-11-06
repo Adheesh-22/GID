@@ -3,14 +3,12 @@ package com.adheesh.gid.feature.home.viewmodel
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.adheesh.gid.core.database.ActivityTypeEntity
 import com.adheesh.gid.core.database.AlarmEntity
 import com.adheesh.gid.core.database.Priority
 import com.adheesh.gid.core.database.TaskEntity
 import com.adheesh.gid.core.database.TimetableEntryEntity
 import com.adheesh.gid.core.util.today
 import com.adheesh.gid.core.util.weekStart
-import com.adheesh.gid.feature.alarm.data.ActivityTypeRepository
 import com.adheesh.gid.feature.alarm.data.AlarmRepository
 import com.adheesh.gid.feature.alarm.domain.AlarmTimeCalculator
 import com.adheesh.gid.core.database.AttendanceStatus
@@ -46,7 +44,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZonedDateTime
 
-data class NextAlarm(val triggerAt: ZonedDateTime, val alarm: AlarmEntity, val type: ActivityTypeEntity?)
+data class NextAlarm(val triggerAt: ZonedDateTime, val alarm: AlarmEntity)
 
 /** A class from today that has started, with how it was marked (SPEC §2.12). */
 data class ClassToMark(val entry: TimetableEntryEntity, val status: AttendanceStatus?)
@@ -66,7 +64,6 @@ class HomeViewModel(
     holidays             : HolidayRepository,
     timetable            : TimetableRepository,
     alarms               : AlarmRepository,
-    types                : ActivityTypeRepository,
     private val actions  : TaskActions,
     private val looks    : AppearanceStore,
     private val attendance : AttendanceRepository,
@@ -110,9 +107,9 @@ class HomeViewModel(
     val stripHolidays: StateFlow<Set<Long>> = holidayDays
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
-    val nextAlarm: StateFlow<NextAlarm?> = combine(alarms.observeAll(), types.observeAll(), minuteTicker) { list, typeList, now ->
+    val nextAlarm: StateFlow<NextAlarm?> = combine(alarms.observeAll(), minuteTicker) { list, now ->
         list.filter { it.enabled }
-            .map { a -> NextAlarm(AlarmTimeCalculator.nextTrigger(a.hour, a.minute, a.repeatDaysMask, now), a, typeList.firstOrNull { it.id == a.typeId }) }
+            .map { a -> NextAlarm(AlarmTimeCalculator.nextTrigger(a.hour, a.minute, a.repeatDaysMask, now), a) }
             .minByOrNull { it.triggerAt }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 

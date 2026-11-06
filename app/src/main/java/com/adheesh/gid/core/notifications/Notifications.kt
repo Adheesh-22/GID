@@ -18,6 +18,8 @@ import com.adheesh.gid.R
 import com.adheesh.gid.core.database.AttendanceStatus
 import com.adheesh.gid.core.database.ExamEntity
 import com.adheesh.gid.core.database.ExamKind
+import com.adheesh.gid.core.scheduling.AlarmReceiver
+import com.adheesh.gid.core.scheduling.AlarmRingActivity
 import com.adheesh.gid.core.scheduling.AttendanceActionReceiver
 import com.adheesh.gid.core.scheduling.SessionActionReceiver
 import com.adheesh.gid.core.util.formatMinutesOfDay
@@ -31,6 +33,8 @@ import com.adheesh.gid.feature.exams.domain.ExamReminderStep
 object Notifications {
 
     const val CHANNEL_ALARMS   = "alarms"
+    /** Rings by itself, for when Android refuses the ringing service. */
+    const val CHANNEL_ALARM_BACKUP = "alarm_backup"
     const val CHANNEL_TIMERS   = "timers"
     const val CHANNEL_CLASSES  = "class_reminders"
     const val CHANNEL_SESSIONS = "sessions"
@@ -39,6 +43,7 @@ object Notifications {
     const val CHANNEL_ATTENDANCE = "attendance"
 
     const val ID_ALARM_RINGING = 1000
+    const val ID_ALARM_BACKUP  = 1001
     const val ID_EVENING       = 3000
     private const val ID_CLASS_BASE = 2000
     private const val ID_EXAM_BASE  = 4000
@@ -68,6 +73,15 @@ object Notifications {
                 NotificationChannel(CHANNEL_ALARMS, context.getString(R.string.channel_alarms), NotificationManager.IMPORTANCE_HIGH).apply {
                     setSound(null, null)
                     enableVibration(false)
+                },
+                NotificationChannel(CHANNEL_ALARM_BACKUP, context.getString(R.string.channel_alarm_backup), NotificationManager.IMPORTANCE_HIGH).apply {
+                    setSound(
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build(),
+                    )
                 },
                 NotificationChannel(CHANNEL_TIMERS, context.getString(R.string.channel_timers), NotificationManager.IMPORTANCE_HIGH).apply {
                     setSound(alarmSound, soundAttrs)
@@ -110,6 +124,29 @@ object Notifications {
     }
 
     fun cancel(context: Context, id: Int) = NotificationManagerCompat.from(context).cancel(id)
+
+    // ── Alarm backup ─────────────────────────────────────────────────────────
+    /** Sounds on its own and opens the ringing screen, which then starts the real ring. */
+    fun showAlarmBackup(context: Context, alarmId: String) {
+        val open = PendingIntent.getActivity(
+            context, ID_ALARM_BACKUP,
+            Intent(context, AlarmRingActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION)
+                .putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        post(
+            context, ID_ALARM_BACKUP,
+            base(context, CHANNEL_ALARM_BACKUP)
+                .setContentTitle(context.getString(R.string.alarm_ringing_title))
+                .setContentText(context.getString(R.string.alarm_tap_to_stop))
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setFullScreenIntent(open, true)
+                .setContentIntent(open)
+                .setAutoCancel(true),
+        )
+    }
 
     // ── Class reminders (Phase 5) ────────────────────────────────────────────
     fun showClassReminder(context: Context, index: Int, subject: String, room: String?, startMinutes: Int) {

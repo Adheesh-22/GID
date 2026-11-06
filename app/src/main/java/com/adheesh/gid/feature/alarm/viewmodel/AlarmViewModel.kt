@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 
 data class AlarmDraft(
     val label          : String,
-    val typeId         : String,
     val hour           : Int,
     val minute         : Int,
     val repeatDaysMask : Int,
@@ -31,8 +30,6 @@ data class AlarmDraft(
     val ringtoneUri    : String?,
     val snoozeMinutes  : Int,
     val requirePattern : Boolean,
-    /** SLEEP/NAP only: begin a sleep session right away (SPEC §2.6). */
-    val startSleepNow  : Boolean,
 )
 
 class AlarmViewModel(
@@ -61,7 +58,7 @@ class AlarmViewModel(
         val alarm = AlarmEntity(
             id             = existing?.id ?: newId(),
             label          = draft.label.trim(),
-            typeId         = draft.typeId,
+            typeId         = existing?.typeId.orEmpty(),
             hour           = draft.hour,
             minute         = draft.minute,
             repeatDaysMask = draft.repeatDaysMask,
@@ -74,13 +71,10 @@ class AlarmViewModel(
         )
         alarms.save(alarm)
         scheduler.schedule(alarm)   // any edit re-arms the alarm (SPEC §7)
-
-        val type = types.getById(draft.typeId)
-        val category = type?.let { ActivityCategory.of(it.category) }
-        if (draft.startSleepNow && type != null && (category == ActivityCategory.SLEEP || category == ActivityCategory.NAP)) {
-            sessions.startSleepNow(type)
-        }
     }
+
+    /** Rings through the same path as a real alarm, to prove this phone will ring. */
+    fun testAlarm() = scheduler.scheduleTest()
 
     fun setEnabled(alarm: AlarmEntity, enabled: Boolean) = viewModelScope.launch {
         val updated = alarm.copy(enabled = enabled, updatedAt = nowMillis())

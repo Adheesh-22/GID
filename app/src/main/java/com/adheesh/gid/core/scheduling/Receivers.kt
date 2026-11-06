@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -25,11 +24,19 @@ private val Context.container: AppContainer
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val alarmId = intent.getStringExtra(EXTRA_ALARM_ID) ?: return
+        AlarmDiagnostics.log(context, "Alarm fired")
+        // Before anything else: Android only keeps the phone awake until this method returns.
+        AlarmRingService.holdWakeLock(context)
         val service = Intent(context, AlarmRingService::class.java)
             .setAction(AlarmRingService.ACTION_START)
             .putExtra(EXTRA_ALARM_ID, alarmId)
             .putExtra(AlarmRingService.EXTRA_IS_SNOOZE, intent.action == ACTION_SNOOZE_RING)
-        ContextCompat.startForegroundService(context, service)
+        if (!AlarmRingService.startRinging(context, service)) {
+            // Android refused the service: a loud notification opens the ringing screen,
+            // which may start the service from the foreground.
+            Notifications.showAlarmBackup(context, alarmId)
+            launchAsync { context.container.rearm(alarmId) }
+        }
     }
 
     companion object {
@@ -42,7 +49,14 @@ class AlarmReceiver : BroadcastReceiver() {
 class TimerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return
-        launchAsync { context.container.sessionManager.finishTimer(sessionId) }
+        AlarmDiagnostics.log(context, "Timer fired")
+        AlarmRingService.holdWakeLock(context)
+        val service = Intent(context, AlarmRingService::class.java)
+            .setAction(AlarmRingService.ACTION_START_TIMER)
+            .putExtra(AlarmRingService.EXTRA_SESSION_ID, sessionId)
+        val ringing = AlarmRingService.startRinging(context, service)
+        // Saves the session; the plain notification is only for when it can't ring.
+        launchAsync { context.container.sessionManager.finishTimer(sessionId, notify = !ringing) }
     }
 
     companion object {

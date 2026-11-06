@@ -93,8 +93,8 @@ There is no AI and no analytics.
   - one card per subject: the percent, a bar (coral below the target, mustard close to
     it, green when safe), and advice such as "You can miss 2 more" or "Attend the next 3
     to reach 75%";
-  - tap a subject to change any mark, add the classes from before you used GID
-    ("Before GID"), or set a target just for that subject.
+  - tap a subject to add the classes from before you used GID ("Before GID"), or set a
+    target just for that subject.
 - **Target:** 75% by default, changeable in Settings. Cancelled classes never count.
 - **Subject pages** show their attendance card.
 
@@ -124,8 +124,8 @@ There is no AI and no analytics.
 - Tap a bar for that day's details.
 
 ## Settings
-- **Profile:** name, date of birth, phone, institution and photo. The photo stays on the
-  phone.
+- **Profile:** name, date of birth, phone, institution and photo. A new photo opens a
+  preview where you zoom and drag it inside a circle before saving. It stays on the phone.
 - **Evening check-in time:** the 21:00 prompt to update today's progress and sort the
   Inbox.
 - **Attendance target**, from 50% to 100%.
@@ -140,17 +140,20 @@ There is no AI and no analytics.
 - Sign out.
 
 ## Alarm popup
-- Alarms with repeat days and an activity type, plus "Start sleep now" for sleep and nap
-  types.
+- Plain alarms: time, label and repeat days, with an **All days** button (on for a new
+  alarm).
+- **Test alarm:** rings in 30 seconds so you can check this phone really rings, with an
+  **Alarm log** of what happened.
 - Each alarm has its own ringtone (from the phone's picker) and snooze length (1, 2, 5, 10,
   15 or 30 minutes; 5 by default).
-- Timers, and the activity-types manager.
+- Timers with an activity type, and the activity-types manager. A finished timer rings until
+  you stop it.
 - Ringing:
   - a full-screen alarm over the lock screen;
-  - **Draw a pattern to stop** (on by default, per alarm): a random 5-dot pattern on a 3×3
-    grid, different every ring, has to be drawn to stop the alarm. The notification then
-    offers Snooze only;
-  - with the option off, a plain Dismiss button.
+  - **Draw a pattern to stop or snooze** (on by default, per alarm): a random 5-dot pattern
+    on a 3×3 grid, different every ring, has to be drawn before Dismiss and Snooze appear.
+    The notification has no buttons meanwhile;
+  - with the option off, both buttons show at once.
 
 ## Timetable popup
 - Your weekly classes (subject, time, room).

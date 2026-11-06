@@ -118,8 +118,10 @@ fun SettingsScreen(
     }
 
     // The system photo picker needs no storage permission.
+    // Picked photos go to the crop screen first; only 'Use photo' saves one.
+    var croppingUri by rememberSaveable { mutableStateOf<String?>(null) }
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) viewModel.setPhoto(uri)
+        if (uri != null) croppingUri = uri.toString()
     }
 
     val message = ui.message?.let { stringResource(it) }
@@ -313,6 +315,16 @@ fun SettingsScreen(
             onPicked    = { viewModel.setDob(it.toEpochDay()) },
         )
     }
+    croppingUri?.let { uri ->
+        PhotoCropDialog(
+            uri      = uri.toUri(),
+            load     = viewModel::loadPhotoForCrop,
+            onFailed = { viewModel.photoFailed(); croppingUri = null },
+            onCancel = { croppingUri = null },
+            onSave   = { bitmap, crop -> viewModel.savePhoto(bitmap, crop); croppingUri = null },
+        )
+    }
+
     if (showEveningPicker) {
         GIDTimePickerDialog(
             initialMinutes = evening,

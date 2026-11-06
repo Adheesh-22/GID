@@ -106,7 +106,7 @@ com.adheesh.gid
 | TimetableEntry | class: subject, subjectId, day, start/end, room, reminder minutes, enabled |
 | Holiday | date, name |
 | ActivityType | name, colour, category (SLEEP, NAP, FOCUS, CLASS, FREE, OTHER) |
-| Alarm | time, repeat days, type, enabled, ringtoneUri, snoozeMinutes, requirePattern |
+| Alarm | time, repeat days, enabled, ringtoneUri, snoozeMinutes, requirePattern (typeId is unused, kept so old data needs no migration) |
 | ActivitySession | sleep, focus and other sessions with start/end and status |
 | LocalProfile | local copy of the cloud profile, needsSync |
 | Subject | name, nameKey (unique), colour, archived, attendanceTarget, priorPresent/Total |
@@ -176,11 +176,16 @@ These are small settings only, kept outside Room.
   exam reminders, attendance. The `Notifications` object owns the ids and the builders.
 
 ## Alarm ringing
-- `AlarmRingService` reads the alarm, plays its ringtone (falling back to the phone's
-  default if that tone is gone) and owns the sound.
+- `AlarmReceiver` takes a wake lock first, because Android only keeps the phone awake until
+  a receiver returns. If Android refuses the service, a backup notification rings instead.
+- `AlarmRingService` owns the sound, for alarms and finished timers. It waits at most 1.5 s
+  for the database, lifts the alarm volume to at least 70% for that ring, and falls back
+  through several tones to a beep.
+- `AlarmDiagnostics` keeps a short on-phone log of each step, shown under Test alarm.
 - `AlarmRingActivity` shows the ringing screen. When `requirePattern` is on it uses
   `AlarmPattern` to make a random path, shows it with `PatternTarget` and checks the drawing
-  from `PatternInput`. The notification drops its Dismiss action, so the shade can't skip it.
+  from `PatternInput`; Dismiss and Snooze appear after that. The notification drops both
+  actions, so the shade can't skip it.
 
 ## Capture entry points
 - **`ShareReceiverActivity`:** the share sheet. It's a see-through activity that shows a
@@ -216,7 +221,7 @@ These are plain Kotlin with no Android code:
 - ScoreCalculator, SessionCalculator, SessionRules, TaskRules;
 - AlarmTimeCalculator, ReminderPlanner, HistoryCalculator, AgeCalculator;
 - CaptureTimeResolver, SubjectSuggester, LinkExtractor, ContentHash;
-- CaptureFileTypes, BackdropContrast;
+- CaptureFileTypes, BackdropContrast, PhotoCrop;
 - VtopParser (checked against real Fall and Winter VTOP grids), AlarmPattern;
 - ExamReminderPlanner, Countdown;
 - Appearance and BoxBlur;

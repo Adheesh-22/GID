@@ -26,7 +26,6 @@ data class SubjectAttendance(val subject: SubjectEntity, val summary: Attendance
 interface AttendanceRepository {
     /** Every active subject that has a class or any marks, by name. */
     fun observeSummaries(): Flow<List<SubjectAttendance>>
-    fun observeForSubject(subjectId: String): Flow<List<AttendanceEntity>>
     fun observeForDay(day: Long): Flow<List<AttendanceEntity>>
     /** The target used for subjects without their own (Settings). */
     fun observeDefaultTarget(): Flow<Int>
@@ -37,7 +36,6 @@ interface AttendanceRepository {
 
     /** Marks [entry] on [day]; marking again replaces the earlier mark. */
     suspend fun mark(entry: TimetableEntryEntity, day: Long, status: AttendanceStatus): AttendanceEntity
-    suspend fun setStatus(mark: AttendanceEntity, status: AttendanceStatus)
     suspend fun delete(mark: AttendanceEntity)
     suspend fun setTarget(subjectId: String, target: Int?)
     suspend fun setPrior(subjectId: String, present: Int, total: Int)
@@ -70,7 +68,6 @@ class AttendanceRepositoryImpl(
             .map { SubjectAttendance(it, summarise(it, bySubject[it.id].orEmpty(), defaultTarget)) }
     }
 
-    override fun observeForSubject(subjectId: String) = dao.observeForSubject(subjectId)
     override fun observeForDay(day: Long) = dao.observeForDay(day)
     override fun observeDefaultTarget() = preferences.attendanceTarget
 
@@ -106,11 +103,6 @@ class AttendanceRepositoryImpl(
         dao.upsert(row)
         onChanged(ClassSlot(entry.id, day, entry.startMinutes))
         return row
-    }
-
-    override suspend fun setStatus(mark: AttendanceEntity, status: AttendanceStatus) {
-        dao.upsert(mark.copy(status = status.name, updatedAt = nowMillis()))
-        onChanged(mark.slot())
     }
 
     override suspend fun delete(mark: AttendanceEntity) {

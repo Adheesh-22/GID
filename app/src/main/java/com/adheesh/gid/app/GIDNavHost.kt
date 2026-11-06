@@ -257,7 +257,6 @@ fun GIDNavHost(container: AppContainer, openProgress: StateFlow<Boolean>, onProg
                                     holidays  = container.holidayRepository,
                                     timetable = container.timetableRepository,
                                     alarms    = container.alarmRepository,
-                                    types     = container.activityTypeRepository,
                                     actions   = taskActions,
                                     looks     = container.appearanceStore,
                                     attendance = container.attendanceRepository,

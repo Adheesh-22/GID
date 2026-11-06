@@ -83,6 +83,14 @@ class AlarmScheduler(
         if (!alarm.enabled) { cancel(alarm.id); return }
         val next = AlarmTimeCalculator.nextTrigger(alarm.hour, alarm.minute, alarm.repeatDaysMask, ZonedDateTime.now())
         ExactAlarms.setAlarmClock(context, next.toInstant().toEpochMilli(), ringIntent(alarm.id, snooze = false))
+        AlarmDiagnostics.log(context, "Set for ${next.toLocalDate()} ${next.toLocalTime()}, exact allowed: ${ExactAlarms.canScheduleExact(context)}")
+    }
+
+    /** A real alarm through the same path as any other, to prove this phone will ring. */
+    fun scheduleTest() {
+        val at = System.currentTimeMillis() + TEST_DELAY_SECONDS * 1_000L
+        ExactAlarms.setAlarmClock(context, at, ringIntent(TEST_ALARM_ID, snooze = false))
+        AlarmDiagnostics.log(context, "Test alarm set, exact allowed: ${ExactAlarms.canScheduleExact(context)}")
     }
 
     fun snooze(alarmId: String, minutes: Int) {
@@ -104,6 +112,12 @@ class AlarmScheduler(
             .setAction(if (snooze) AlarmReceiver.ACTION_SNOOZE_RING else AlarmReceiver.ACTION_RING)
             .putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
         return PendingIntent.getBroadcast(context, alarmId.hashCode(), intent, PI_FLAGS)
+    }
+
+    companion object {
+        const val TEST_DELAY_SECONDS = 30
+        /** Not in the database, so it rings with defaults and arms nothing after. */
+        private const val TEST_ALARM_ID = "test"
     }
 }
 

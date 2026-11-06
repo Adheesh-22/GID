@@ -10,7 +10,6 @@
     <string name="action_done">Done</string>
     <string name="action_fix">Fix</string>
     <string name="action_im_awake">I\'m awake</string>
-    <string name="action_no_thanks">No thanks</string>
     <string name="action_not_now">Not now</string>
     <string name="action_ok">OK</string>
     <string name="action_open">Open</string>
@@ -251,7 +250,6 @@
     <string name="field_task_title">Title</string>
     <string name="field_time">Time</string>
     <string name="field_time_optional">Time (optional)</string>
-    <string name="field_type">Type</string>
 
     <!-- Auth -->
     <string name="auth_logo_letter">G</string>
@@ -370,8 +368,6 @@
     <string name="alarm_once">Once</string>
     <string name="alarm_every_day">Every day</string>
     <string name="alarm_weekdays">Weekdays</string>
-    <string name="alarm_start_sleep_now">Start sleep now</string>
-    <string name="alarm_start_sleep_hint">Counts your sleep from now until you dismiss this alarm.</string>
     <string name="alarm_ringing_title">Alarm</string>
     <string name="alarm_warn_exact">Alarms may ring late: exact alarms are not allowed for GID.</string>
     <string name="alarm_warn_full_screen">The ringing screen can\'t show over the lock screen yet.</string>
@@ -386,8 +382,6 @@
     <string name="category_class">Class</string>
     <string name="category_free">Free time</string>
     <string name="category_other">Other</string>
-    <string name="focus_offer_title">Start a session?</string>
-    <string name="focus_offer_text">Pick a focus length. A timer starts right away.</string>
 
     <!-- History -->
     <string name="history_title">History</string>
@@ -488,7 +482,6 @@
     <string name="attendance_present">Present</string>
     <string name="attendance_absent">Absent</string>
     <string name="attendance_cancelled">Cancelled</string>
-    <string name="attendance_remove">Remove mark</string>
     <string name="attendance_title">Attendance</string>
     <string name="attendance_today">Attendance today</string>
     <string name="attendance_see_all">All subjects</string>
@@ -513,8 +506,6 @@
     <string name="attendance_prior_total">Held</string>
     <string name="attendance_target">Target</string>
     <string name="attendance_target_default">Default (%1$d%%)</string>
-    <string name="attendance_marks">Marks</string>
-    <string name="attendance_no_marks">No marks yet.</string>
     <string name="cd_mark_present">Mark %1$s present</string>
     <string name="cd_mark_absent">Mark %1$s absent</string>
     <string name="cd_mark_cancelled">Mark %1$s cancelled</string>
@@ -573,9 +564,9 @@
     <string name="alarm_ringtone">Ringtone</string>
     <string name="alarm_ringtone_default">Phone default</string>
     <string name="alarm_snooze_length">Snooze length</string>
-    <string name="alarm_require_pattern">Draw a pattern to stop</string>
-    <string name="alarm_require_pattern_hint">A random pattern each time, so you have to wake up to stop it.</string>
-    <string name="alarm_pattern_prompt">Draw this pattern to stop the alarm</string>
+    <string name="alarm_require_pattern">Draw a pattern to stop or snooze</string>
+    <string name="alarm_require_pattern_hint">A random pattern each time, so you have to wake up before you can stop or snooze it.</string>
+    <string name="alarm_pattern_prompt">Draw this pattern to stop or snooze</string>
     <string name="alarm_pattern_wrong">Not that one. Follow the numbers.</string>
 
     <!-- VTOP import (SPEC §2.7) -->
@@ -613,13 +604,13 @@
     <string name="help_timetable_title">Timetable</string>
     <string name="help_timetable_body">Tap the Timetable card on Home.\n\nThe quick way: tap Change timetable, then Paste from VTOP. On VTOP open Time Table, pick the semester, select the whole page, copy it and paste it. GID builds every class with VTOP\'s exact times and rooms, and shows a preview first. Do the same at the start of each semester.\n\nYou can also add or edit classes by hand. Each class can remind you some minutes before it starts.</string>
     <string name="help_attendance_title">Attendance</string>
-    <string name="help_attendance_body">When a class ends, a notification asks whether you were there: Present, Absent or Cancelled. You can also mark classes on Home. Cancelled classes never count.\n\nAttendance shows each subject\'s percent and tells you how many you can miss or must attend. Tap a subject to fix a mark, add classes from before you used GID, or set a target just for it. The usual target is in Settings.</string>
+    <string name="help_attendance_body">When a class ends, a notification asks whether you were there: Present, Absent or Cancelled. You can also mark classes on Home. Cancelled classes never count.\n\nAttendance shows each subject\'s percent and tells you how many you can miss or must attend. Tap a subject to add classes from before you used GID, or set a target just for it. The usual target is in Settings.</string>
     <string name="help_exams_title">Exams and assignments</string>
     <string name="help_exams_body">Find them under Exams in Library, or tap Next up on Home. Add exams, tests, assignments and projects with a date, time and room.\n\nReminders come at 19:00 a week before (exams and tests), 19:00 the day before, and in the morning. An exam\'s page shows the topics left to cover and what you\'ve saved for that subject.</string>
     <string name="help_syllabus_title">Syllabus</string>
     <string name="help_syllabus_body">Open a subject, then its Syllabus card. Add units and topics and tick them off as you finish.\n\nPaste list saves typing: lines starting with Unit, Module or Chapter, or ending with a colon, become units, and every other line becomes a topic.\n\nWhen adding an exam, pick the units it covers to see progress for just those.</string>
     <string name="help_alarms_title">Alarms, timers and sleep</string>
-    <string name="help_alarms_body">Tap the Alarm card on Home. Each alarm has its own time, repeat days, ringtone and snooze length (5 minutes unless you change it).\n\nDraw a pattern to stop is on by default. The ringing screen shows a random pattern with numbered dots, and the alarm stops only when you draw that same path on the grid below it. Snooze is still one tap. Turn the option off for any alarm to get a plain Dismiss button.\n\nSleep and nap alarms also track your sleep. Timers and activity types live in the same popup.</string>
+    <string name="help_alarms_body">Tap the Alarm card on Home. Each alarm has its own time, repeat days (all days to start with), ringtone and snooze length (5 minutes unless you change it). Test alarm rings in 30 seconds, so you can check this phone will really ring.\n\nDraw a pattern to stop or snooze is on by default. The ringing screen shows a random pattern with numbered dots. Draw that same path on the grid below it, and the Dismiss and Snooze buttons appear. The alarm keeps ringing until you pick one. Turn the option off for any alarm to get the buttons straight away.\n\nTimers are in the same popup, with activity types such as DSA or Sleep so your time is counted in History. A finished timer rings until you stop it. Dismissing an alarm ends any sleep timer still running.</string>
     <string name="help_history_title">History</string>
     <string name="help_history_body">See any week\'s productivity, sleep and overall score, compared with the week before. Tap a bar for that day\'s details.</string>
     <string name="help_look_title">Making it yours</string>
@@ -628,4 +619,18 @@
     <string name="help_backup_body">Your data lives only on this phone, so export a backup now and then: Settings, then Export backup. It makes one .zip file that you keep wherever you like.\n\nImport backup on any phone brings it back and replaces what\'s there. Your Home look isn\'t included.</string>
     <string name="help_reliability_title">If an alarm or reminder doesn\'t come</string>
     <string name="help_reliability_body">Open Settings, then Reliability, and turn every row green.\n\nOn Xiaomi, Oppo, Vivo, Realme and Samsung phones, also open the app\'s info page and allow Autostart or No battery restrictions. Otherwise the phone may stop GID in the background.</string>
+    <!-- Alarm reliability (SPEC §2.6) -->
+    <string name="channel_alarm_backup">Alarm backup</string>
+    <string name="alarm_tap_to_stop">Tap to stop</string>
+    <string name="alarm_all_days">All days</string>
+    <plurals name="alarm_test">
+        <item quantity="one">Test alarm: rings in %1$d second</item>
+        <item quantity="other">Test alarm: rings in %1$d seconds</item>
+    </plurals>
+    <string name="alarm_test_hint">Tap it, lock your phone and wait. If it stays silent, open GID\'s app info and allow Auto launch, or set battery to No restrictions, then try again. Show the log below if it still fails.</string>
+    <string name="alarm_log">Alarm log</string>
+    <!-- Profile photo crop (SPEC §2.5) -->
+    <string name="photo_crop_title">Adjust your photo</string>
+    <string name="photo_crop_hint">Pinch to zoom and drag to move. The circle is what will show.</string>
+    <string name="photo_crop_use">Use photo</string>
 </resources>

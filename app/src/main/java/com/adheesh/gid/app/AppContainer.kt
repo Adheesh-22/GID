@@ -165,6 +165,12 @@ class AppContainer(private val context: Context) {
         GIDWidget.refresh(context)
     }
 
+    /** When an alarm couldn't start its service, its next ring still has to be set. */
+    suspend fun rearm(alarmId: String) {
+        val alarm = runCatching { alarmRepository.getById(alarmId) }.getOrNull() ?: return
+        if (alarm.repeatDaysMask != 0) alarmScheduler.schedule(alarm)
+    }
+
     /** After any exam is added, edited, done or deleted. */
     private suspend fun onExamsChanged() {
         runCatching { examReminderScheduler.replan() }

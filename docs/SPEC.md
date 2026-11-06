@@ -89,6 +89,8 @@ placeholder), 'Sign out' (confirm dialog). Plus a 'Reliability' section (see
 section 7).
 - Save validates name and DOB, writes locally first, then upserts the
 Supabase profile. If offline, set needsSync and retry on next launch.
+- Profile photo: a picked photo opens a preview to zoom and drag inside a circle.
+Nothing is saved until 'Use photo'; the chosen square is saved at up to 512 px.
 2.5a Help
 - Near the bottom of Settings, 'How to use GID' opens a page (slides up)
 explaining every feature, one expandable section each.
@@ -96,17 +98,25 @@ explaining every feature, one expandable section each.
 2.6 AlarmPopup (floating dialog)
 - Segmented control: Alarms | Timers.
 - Alarm row: time, label, type chip, repeat days, on/off switch. Add/edit:
-time picker, label, type, repeat days. For SLEEP/NAP types an extra toggle
-'Start sleep now'.
+time picker, label, repeat days ('All days' chip, on by default for a new
+alarm; off means it rings once). Alarms have no activity type. Timers do, and a
+finished timer rings until stopped (no snooze), even with the app closed.
+- 'Test alarm' rings in 30 seconds through the same path as a real alarm, and an
+'Alarm log' shows what happened (set, fired, sound, any failure).
+- Nothing may end in silence: a wake lock from the moment the alarm fires, the
+sound starts within 1.5 s even if the database is slow, the alarm volume is
+lifted to at least 70% for that ring and restored after, each tone falls back to
+the next, then to a beep. If Android refuses the service, a loud backup
+notification opens the ringing screen.
 - Timer: duration, type, Start. A running timer shows a live countdown.
 - Per alarm: ringtone (system picker; default = the phone's alarm sound), snooze
-length (1, 2, 5, 10, 15 or 30 minutes; default 5) and 'Draw a pattern to stop'
-(default on).
+length (1, 2, 5, 10, 15 or 30 minutes; default 5) and 'Draw a pattern to stop or
+snooze' (default on).
 - Pattern to stop: the ringing screen shows a random 5-dot path on a 3x3 grid,
-numbered in order, different every ring. It stops only when that path is
-drawn on the grid below it, so it can't be dismissed half asleep. A wrong path
-buzzes and can be retried. The notification then offers Snooze only. With the
-option off, the Dismiss button is shown as before.
+numbered in order, different every ring. Dismiss and Snooze appear only after
+that path is drawn on the grid below it, and the alarm rings until one is
+tapped. A wrong path buzzes and can be retried. The notification has no buttons
+while a pattern is required. With the option off, both buttons show at once.
 - Bottom: 'Activity types' manager: name, color, category. Add/edit/delete
 (defaults can be renamed, not deleted).
 - Default types: Sleep (SLEEP), Nap (NAP), Study session, Vibecode, DSA,
@@ -211,9 +221,8 @@ three small buttons (present, absent, cancelled) with the current mark; an
 - Attendance page (slides up): one card per subject with classes or marks:
 percent, a bar (coral below the target, mustard within 5 points above it,
 green otherwise) and advice: 'You can miss N more' or 'Attend the next N to
-reach 75%'. Tap -> subject sheet: every mark (tap to change or remove),
-'Before GID: attended X of Y' (classes before the app was used), and a target
-override for that subject.
+reach 75%'. Tap -> subject sheet: 'Before GID: attended X of Y' (classes before
+the app was used) and a target override for that subject.
 - SubjectDetail shows the subject's attendance line at the top.
 - Settings: 'Attendance target' (50-100%, default 75), used by every subject
 without its own target.
@@ -243,12 +252,8 @@ days and under 70% done, coral when within 7 days and under 70% done.
 Sessions: one table (ActivitySession) feeds both sleep and focus stats.
 - Timer: start creates a RUNNING session with endsAt; finishing or stopping
 closes it with the real duration.
-- SLEEP/NAP alarm: 'Start sleep now' creates a RUNNING session at the current
-time. Dismissing the ringing alarm, or tapping 'I'm awake' on the ongoing
-notification, closes it at that moment. An alarm without a session just
-rings.
-- FOCUS alarm: rings; on dismiss offer 'Start a session' with quick durations
-(25/45/60 min).
+- Sleep and naps are counted from SLEEP and NAP timers. Dismissing a ringing alarm
+closes any of them still running.
 - A session still RUNNING after 16 hours is closed automatically and flagged.
 - Sleep counts on the day the session ENDS. Long sleep = SLEEP sessions, nap
 = NAP sessions, total = both. Focus time = FOCUS sessions grouped by type.

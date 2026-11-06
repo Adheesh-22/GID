@@ -12,10 +12,6 @@ interface AttendanceDao {
     @Query("SELECT subjectId, status, COUNT(*) AS count FROM attendance WHERE subjectId = :subjectId GROUP BY status")
     suspend fun countsForSubject(subjectId: String): List<AttendanceCount>
 
-    /** Newest first. */
-    @Query("SELECT * FROM attendance WHERE subjectId = :subjectId ORDER BY dateEpochDay DESC, startMinutes DESC")
-    fun observeForSubject(subjectId: String): Flow<List<AttendanceEntity>>
-
     @Query("SELECT * FROM attendance WHERE dateEpochDay = :day")
     fun observeForDay(day: Long): Flow<List<AttendanceEntity>>
 

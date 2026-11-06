@@ -23,14 +23,6 @@ class SessionManager(
     private val timers   : TimerScheduler,
 ) {
 
-    /** 'Start sleep now' for a SLEEP or NAP type: RUNNING from this moment. */
-    suspend fun startSleepNow(type: ActivityTypeEntity): ActivitySessionEntity {
-        val session = SessionRules.start(type.id, type.category, SessionSource.ALARM, nowMillis())
-        sessions.save(session)
-        Notifications.showSleeping(context, session.id, type.name, session.startAt)
-        return session
-    }
-
     /** Timer: a RUNNING session whose end time is persisted (start + minutes). */
     suspend fun startTimer(type: ActivityTypeEntity, minutes: Int): ActivitySessionEntity {
         val session = SessionRules.start(type.id, type.category, SessionSource.TIMER, nowMillis(), plannedMinutes = minutes)
@@ -41,14 +33,14 @@ class SessionManager(
         return session
     }
 
-    /** Timer reached its end: close it at the planned end and notify with sound. */
-    suspend fun finishTimer(sessionId: String) {
+    /** Timer reached its end: close it at the planned end. The ring is the alarm service's job. */
+    suspend fun finishTimer(sessionId: String, notify: Boolean = true) {
         val session = sessions.getById(sessionId) ?: return
         if (session.status != SessionStatus.RUNNING.name) return
         val end = SessionRules.endsAt(session)?.coerceAtMost(nowMillis()) ?: nowMillis()
         sessions.save(SessionRules.close(session, end))
         Notifications.cancel(context, sessionId.hashCode())
-        Notifications.showTimerDone(context, sessionId, typeName(session.typeId))
+        if (notify) Notifications.showTimerDone(context, sessionId, typeName(session.typeId))
     }
 
     /** Stop early, or 'I'm awake': close with the real duration. */
@@ -60,7 +52,7 @@ class SessionManager(
         Notifications.cancel(context, sessionId.hashCode())
     }
 
-    /** Dismissing a SLEEP/NAP alarm ends the sleep that 'Start sleep now' began. */
+    /** Dismissing an alarm ends any sleep still being counted. */
     suspend fun closeSleepSessions() {
         sessions.getAllRunning()
             .filter { val c = ActivityCategory.of(it.category); c == ActivityCategory.SLEEP || c == ActivityCategory.NAP }

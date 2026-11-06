@@ -1,11 +1,9 @@
 package com.adheesh.gid.feature.appearance.data
 
+import com.adheesh.gid.core.util.decodeUpright
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.net.Uri
-import androidx.exifinterface.media.ExifInterface
 import com.adheesh.gid.core.database.GIDPreferences
 import com.adheesh.gid.feature.appearance.domain.Appearance
 import com.adheesh.gid.feature.appearance.domain.BoxBlur
@@ -44,7 +42,7 @@ class AppearanceStore(
 
     /** Blurs the picked photo and makes it the background. Returns false if it couldn't be read. */
     suspend fun setBackground(uri: Uri): Boolean = withContext(Dispatchers.Default) {
-        val blurred = runCatching { decodeSmall(uri)?.let(::blur) }.getOrNull() ?: return@withContext false
+        val blurred = runCatching { decodeUpright(context, uri, TARGET_WIDTH)?.let(::blur) }.getOrNull() ?: return@withContext false
         // A new file name each time so the screen reloads instead of showing the cached old one.
         val target = File(context.filesDir, "background_${System.currentTimeMillis()}.jpg")
         val saved = withContext(Dispatchers.IO) {
@@ -65,32 +63,6 @@ class AppearanceStore(
     suspend fun clearBackground() = withContext(Dispatchers.IO) {
         preferences.backgroundPath.first()?.let { File(it).delete() }
         preferences.setBackgroundPath(null)
-    }
-
-    /** Decodes about [TARGET_WIDTH] pixels wide, the right way up. */
-    private fun decodeSmall(uri: Uri): Bitmap? {
-        val resolver = context.contentResolver
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        // Reads only the size; decodeStream returns null here by design.
-        val stream = resolver.openInputStream(uri) ?: return null
-        stream.use { BitmapFactory.decodeStream(it, null, bounds) }
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-
-        var sample = 1
-        while (minOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= TARGET_WIDTH) sample *= 2
-        val decoded = resolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
-        } ?: return null
-
-        val rotation = resolver.openInputStream(uri)?.use {
-            runCatching { ExifInterface(it).rotationDegrees }.getOrDefault(0)
-        } ?: 0
-        val shortSide = minOf(decoded.width, decoded.height)
-        val scale = (TARGET_WIDTH.toFloat() / shortSide).coerceAtMost(1f)
-        if (rotation == 0 && scale == 1f) return decoded
-        val matrix = Matrix().apply { postScale(scale, scale); postRotate(rotation.toFloat()) }
-        return Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
-            .also { if (it !== decoded) decoded.recycle() }
     }
 
     private fun blur(source: Bitmap): Bitmap {

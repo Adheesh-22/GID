@@ -21,7 +21,7 @@ The full product spec is in [docs/SPEC.md](docs/SPEC.md) and the coding rules ar
 | **Calendar** | A month grid with task dots and holidays (long-press a date to mark one). Add, edit, delete, track percent done, change priority and move tasks to tomorrow. |
 | **Library** | Each subject opens with tabs: All, then one per category (add, rename or remove categories). The Capture Inbox. Share photos, links, text, PDFs, Word or PowerPoint files to GID from any app (or tap +). GID suggests the subject from your timetable; you sort each item into a subject, heading and category. Search, subject pages, and a deadline can become a task. Files are copied into GID once; capturing the same file again reuses that copy. All on the phone. |
 | **Exams & Assessments** | Separate pages for exams and tests, and for assignments and projects (paste VTOP's Assignment Upload pages), per subject, with countdowns, reminders (a week before, the evening before, the morning of) and the subject's saved Library items. Shown on Home ("Next up"), the Calendar and subject pages. |
-| **Semesters** | Everything follows the semester you pick. Pasting a VTOP Time Table page sorts subjects into it; the one marked Classes now sends class reminders. |
+| **Semesters** | Everything follows the semester you pick. Pasting a VTOP Time Table page fills it with its courses, you can add online ones, and semesters can be renamed or deleted; the one marked Classes now sends class reminders. |
 | **Marks** | Paste VTOP's Marks View. Each subject shows uploaded and remaining marks; type what you expect and see the total out of 100, weighted by credits. |
 | **Attendance** | Mark each class Present, Absent or Cancelled, from the notification that appears when a class ends or from Home. The Attendance page shows each subject's percent against your target (75% by default, changeable in Settings or per subject) and says how many classes you can miss or must attend. Classes from before you used GID can be added. |
 | **Syllabus** | Units and topics per subject that you tick off, with percent per unit and subject. Paste a whole syllabus and GID splits it into units and topics. An exam can cover chosen units; its page and Home's Next up show progress for just those. |
@@ -141,10 +141,3 @@ feature/<name>/  ui/ (Compose), viewmodel/ (StateFlow), data/ (repositories), do
 Open **Settings → Reliability** and make every row green. On Xiaomi, Oppo, Vivo, Realme and
 Samsung phones, also open the app info page and allow *Autostart* or *Don't restrict battery*.
 Otherwise the phone may stop alarms while the app is closed.
-
-## Known limitations (V1)
-
-- Data lives only on the phone. Export a backup regularly (**Settings → Backup**); without
-  one, uninstalling the app or losing the phone erases everything.
-- The backup does not include the Home look (name, font, colour, background photo).
-- The "Contact us" address is `contact_email` in `res/values/strings.xml`.
